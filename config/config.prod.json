@@ -1,0 +1,14 @@
+{
+  "app":{
+    "serverport":"13003",
+    "svd_host": "https://api.svd.apps.ainosi.com/"
+  },
+  "databases":[
+    {
+      "name": "db_trx_ticketing",
+      "driver_name":"postgres",
+      "connection_string":"postgres://ticketing:TnTSys+3m!8@tnt-psql.ticketinghouse.svc:5432/db_trx_ticketing?sslmode=disable&application_name=Ticketing",
+      "max_connection_open":20
+    }
+  ]
+}
