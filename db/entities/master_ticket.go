@@ -36,3 +36,44 @@ type Condition struct {
 	Card_type  string   `json:"cardType"`
 	Expired_qr int      `json:"expiredQr"`
 }
+
+type GrupModel struct {
+	Group_id   int
+	Group_mid  string
+	Group_name string
+}
+
+func (GrupModel) TableName() string {
+	return "master_group"
+}
+
+type TariffModel struct {
+	Trf_id   int
+	Trf_name string
+}
+
+func (TariffModel) TableName() string {
+	return "master_tariff"
+}
+
+type TicketModel struct {
+	Mtick_id       int
+	Mtick_name     string
+	Group          GrupModel `gorm:"foreignkey:Mtick_group_id;association_foreignkey:Group_id"`
+	Mtick_group_id int
+}
+
+func (TicketModel) TableName() string {
+	return "master_ticket"
+}
+
+type TariffDetModel struct {
+	Tarif           TariffModel `gorm:"foreignkey:Trfdet_trf_id;association_foreignkey:Trf_id"`
+	Ticket          TicketModel `gorm:"foreignkey:Trfdet_mtick_id;association_foreignkey:Mtick_id"`
+	Trfdet_trf_id   int
+	Trfdet_mtick_id int
+}
+
+func (TariffDetModel) TableName() string {
+	return "master_tariffdet"
+}

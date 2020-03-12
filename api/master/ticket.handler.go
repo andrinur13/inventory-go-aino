@@ -9,6 +9,7 @@ import (
 	"twc-ota-api/db/repositories"
 	"twc-ota-api/logger"
 	"twc-ota-api/middleware"
+	"twc-ota-api/requests"
 	"twc-ota-api/service"
 	"twc-ota-api/utils/builder"
 
@@ -64,7 +65,7 @@ func GetTicketList(c *gin.Context) {
 
 // BookingTicket : booking ticket
 func BookingTicket(c *gin.Context) {
-	var param interface{}
+	var param requests.BookingReq
 	c.BindJSON(&param)
 
 	in, _ := json.Marshal(param)
@@ -74,7 +75,7 @@ func BookingTicket(c *gin.Context) {
 
 	userData := middleware.Decode(split[1])
 
-	data, code, msg, stat := repositories.BookingTicket(userData)
+	data, code, msg, stat := repositories.BookingTicket(userData, &param)
 
 	out, _ := json.Marshal(data)
 
