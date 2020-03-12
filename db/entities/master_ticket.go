@@ -6,7 +6,7 @@ type MasterTicket struct {
 	Trf_code          string     `json:"trf_code"`
 	Trf_group_id      int        `json:"trf_group_id"`
 	Trf_trftype       string     `json:"trf_trftype"`
-	Trf_value         int        `json:"trf_value"`
+	Trf_value         float32    `json:"trf_value"`
 	Trf_start_date    string     `json:"trf_start_date"`
 	Trf_end_date      string     `json:"trf_end_date"`
 	Trf_priority      int        `json:"trf_priority"`

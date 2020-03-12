@@ -6,9 +6,9 @@ type Booking struct {
 	Booking_number         string
 	Booking_date           string
 	Booking_mid            string
-	Booking_amount         int
+	Booking_amount         float32
 	Booking_emoney         int
-	Booking_total_payment  int
+	Booking_total_payment  float32
 	Booking_payment_method string
 	Booking_uuid           string `gorm:"type:uuid;not null;default:uuid_generate_v4()"`
 }
@@ -22,9 +22,9 @@ type Bookingdet struct {
 	Bookingdet_booking_id int
 	Bookingdet_trf_id     int
 	Bookingdet_trftype    string
-	Bookingdet_amount     int
+	Bookingdet_amount     float32
 	Bookingdet_qty        int
-	Bookingdet_total      int
+	Bookingdet_total      float32
 }
 
 func (Bookingdet) TableName() string {
