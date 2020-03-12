@@ -12,6 +12,34 @@ import (
 
 // BookingTicket : booking ticket
 func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]interface{}, string, string, bool) {
+	if r.BookingNumber == "" {
+		return nil, "99", "Format error, booking number are required", false
+	}
+
+	if r.BookingDate == "" {
+		return nil, "99", "Format error, booking date are required", false
+	}
+
+	if r.Mbmid == "" {
+		return nil, "99", "Format error, mbmid are required", false
+	}
+
+	if r.PayAmt == 0 {
+		return nil, "99", "Format error, amount are required", false
+	}
+
+	if r.Emoney == 0 {
+		return nil, "99", "Format error, emoney are required", false
+	}
+
+	if r.PayMethod == "" {
+		return nil, "99", "Format error, payment method are required", false
+	}
+
+	if r.Email == "" {
+		return nil, "99", "Format error, customer's email are required", false
+	}
+
 	booking := entities.Booking{
 		Agent_id:               token.Typeid,
 		Booking_number:         r.BookingNumber,
@@ -21,6 +49,10 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		Booking_emoney:         r.Emoney,
 		Booking_total_payment:  r.PayAmt,
 		Booking_payment_method: r.PayMethod,
+		Customer_email:         r.Email,
+		Customer_phone:         r.Phone,
+		Customer_username:      r.Username,
+		Customer_note:          r.Note,
 	}
 
 	db.DB[0].NewRecord(booking)
@@ -30,6 +62,12 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 	}
 
 	for _, trf := range r.Trf {
+		if trf.TrfID == 0 || trf.TrfAmount == 0 || trf.TrfType == "" || trf.TrfQty == 0 || trf.TrfTotal == 0 {
+			db.DB[0].Where("bookingdet_booking_id = ?", booking.Booking_id).Delete(entities.Bookingdet{})
+			db.DB[0].Where("booking_id = ?", booking.Booking_id).Delete(entities.Booking{})
+
+			return nil, "99", "Format error, please complete tarif's payload", false
+		}
 		var tarif entities.TariffModel
 		if err := db.DB[0].Where("trf_id = ? AND deleted_at IS NULL", trf.TrfID).Find(&tarif).Error; gorm.IsRecordNotFoundError(err) {
 			db.DB[0].Where("bookingdet_booking_id = ?", booking.Booking_id).Delete(entities.Bookingdet{})
@@ -100,7 +138,7 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", config.Mail.Email)
-	m.SetHeader("To", token.Email)
+	m.SetHeader("To", r.Email)
 	m.SetHeader("Subject", "Booking detail")
 	m.SetBody("text/html", `
 	<html>

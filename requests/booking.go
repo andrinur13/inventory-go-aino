@@ -7,6 +7,10 @@ type BookingReq struct {
 	PayAmt        float32   `json:"pay_amount"`
 	Emoney        int       `json:"emoney"`
 	PayMethod     string    `json:"payment_method"`
+	Username      string    `json:"customer_username"`
+	Email         string    `json:"customer_email"`
+	Phone         string    `json:"customer_phone"`
+	Note          string    `json:"customer_note"`
 	Trf           []bookTrf `json:"trf"`
 }
 
