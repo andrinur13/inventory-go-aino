@@ -29,7 +29,7 @@
   branch = "master"
   name = "github.com/Zurin/logrus"
   packages = ["."]
-  revision = "dec1e47e70d7e9a5ed0df224cef2f39f7389b09d"
+  revision = "211deb7f2108d454c32447493c1162d5c1f4e97e"
 
 [[projects]]
   branch = "master"
@@ -281,13 +281,25 @@
   branch = "master"
   name = "golang.org/x/tools"
   packages = ["go/ast/astutil","go/buildutil","go/internal/cgo","go/loader"]
-  revision = "11ec41452d41e25c11448deda74041bef7ddeb5f"
+  revision = "aafaee8bce8c38f7ce09907ff7430abcb6f58132"
+
+[[projects]]
+  branch = "v3"
+  name = "gopkg.in/alexcesaro/quotedprintable.v3"
+  packages = ["."]
+  revision = "2caba252f4dc53eaf6b553000885530023f54623"
 
 [[projects]]
   name = "gopkg.in/go-playground/validator.v9"
   packages = ["."]
   revision = "21c910fc6d9c3556c28252b04beb17de0c2d40ec"
   version = "v9.31.0"
+
+[[projects]]
+  name = "gopkg.in/gomail.v2"
+  packages = ["."]
+  revision = "41f3572897373c5538c50a2402db15db079fa4fd"
+  version = "2.0.0"
 
 [[projects]]
   name = "gopkg.in/olahol/melody.v1"
@@ -310,6 +322,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6e59a7228d39cbc6edc52b4fd34e9f17bbbf306dd0d094d59c6fb8104351935b"
+  inputs-digest = "9a4425e8d01eab6ffb18270d2a5ec15cc2a1fd6ebe3091a2759000f614562dde"
   solver-name = "gps-cdcl"
   solver-version = 1

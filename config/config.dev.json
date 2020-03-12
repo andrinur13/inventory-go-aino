@@ -3,6 +3,13 @@
     "serverport":"13008",
     "svd_host": "https://api.svd.dev.ainosi.com/"
   },
+  "email": {
+    "host":"smtp.gmail.com",
+    "port": 587,
+    "email": "zurinezekiel@gmail.com",
+    "username": "zurinezekiel@gmail.com",
+    "password": "immortalblood"
+  },
   "databases":[
     {
       "name": "db_trx_twc",

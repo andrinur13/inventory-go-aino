@@ -14,6 +14,15 @@ type appConf struct {
 	SvdHost    string
 }
 
+// mailConf : struct for attributes needed for email config
+type mailConf struct {
+	Host     string
+	Port     int
+	Email    string
+	Username string
+	Password string
+}
+
 // Database : struct for attributes needed for Database config
 type Database struct {
 	Name              string
@@ -24,6 +33,9 @@ type Database struct {
 
 // App : store appConfig
 var App = appConf{}
+
+// Mail : store mailConfig
+var Mail = mailConf{}
 
 // Databases : for storing database config
 var Databases = []Database{}
@@ -55,6 +67,46 @@ func Init(env string) {
 			log.Fatal(err)
 		} else {
 			App.SvdHost = string(svdHost)
+		}
+
+		var mailHost []byte
+		mailHost, _, _, err = jsonparser.Get(cfgBlob, "email", "host")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			Mail.Host = string(mailHost)
+		}
+
+		var mailPort int64
+		mailPort, err = jsonparser.GetInt(cfgBlob, "email", "port")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			Mail.Port = int(mailPort)
+		}
+
+		var mailEmail []byte
+		mailEmail, _, _, err = jsonparser.Get(cfgBlob, "email", "email")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			Mail.Email = string(mailEmail)
+		}
+
+		var mailUsername []byte
+		mailUsername, _, _, err = jsonparser.Get(cfgBlob, "email", "username")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			Mail.Username = string(mailUsername)
+		}
+
+		var mailPass []byte
+		mailPass, _, _, err = jsonparser.Get(cfgBlob, "email", "password")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			Mail.Password = string(mailPass)
 		}
 
 		jsonparser.ArrayEach(cfgBlob, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {

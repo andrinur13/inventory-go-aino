@@ -1,13 +1,20 @@
 {
   "app":{
-    "serverport":"13003",
+    "serverport":"13008",
     "svd_host": "https://api.svd.dev.ainosi.com/"
+  },
+  "email": {
+    "host":"smtp.gmail.com",
+    "port": 587,
+    "email": "zurinezekiel@gmail.com",
+    "username": "zurinezekiel@gmail.com",
+    "password": "immortalblood"
   },
   "databases":[
     {
-      "name": "db_trx_ticketing",
+      "name": "db_trx_twc",
       "driver_name":"postgres",
-      "connection_string":"postgres://postgres:postgres@127.0.0.1:5438/db_trx_ticketing?sslmode=disable&application_name=Ticketing",
+      "connection_string":"postgres://engine_ticket:2Du9te3QxrZ9y3Bq@172.16.27.15:5432/db_trx_twc?sslmode=disable&application_name=TICKETING-OTA-TWC",
       "max_connection_open":20
     }
   ]
