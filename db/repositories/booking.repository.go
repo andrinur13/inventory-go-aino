@@ -193,7 +193,13 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 
 	err := dialer.DialAndSend(m)
 	if err != nil {
-		return nil, "08", "Booking success, but an error occurred when sending e-mail (" + err.Error() + ")", false
+		return map[string]interface{}{
+			"data_tariff": r.Trf,
+			"booking_detail": map[string]interface{}{
+				"booking_UUID":   booking.Booking_uuid,
+				"booking_number": booking.Booking_number,
+			},
+		}, "08", "Booking success, but an error occurred when sending e-mail (" + err.Error() + ")", true
 	}
 
 	return map[string]interface{}{
