@@ -13,31 +13,31 @@ import (
 // BookingTicket : booking ticket
 func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]interface{}, string, string, bool) {
 	if r.BookingNumber == "" {
-		return nil, "99", "Format error, booking number are required", false
+		return nil, "99", "Format error, booking number is required", false
 	}
 
 	if r.BookingDate == "" {
-		return nil, "99", "Format error, booking date are required", false
+		return nil, "99", "Format error, booking date is required", false
 	}
 
 	if r.Mbmid == "" {
-		return nil, "99", "Format error, mbmid are required", false
+		return nil, "99", "Format error, mbmid is required", false
 	}
 
 	if r.PayAmt == 0 {
-		return nil, "99", "Format error, amount are required", false
+		return nil, "99", "Format error, amount is required", false
 	}
 
 	if r.Emoney == 0 {
-		return nil, "99", "Format error, emoney are required", false
+		return nil, "99", "Format error, emoney is required", false
 	}
 
 	if r.PayMethod == "" {
-		return nil, "99", "Format error, payment method are required", false
+		return nil, "99", "Format error, payment method is required", false
 	}
 
 	if r.Email == "" {
-		return nil, "99", "Format error, customer's email are required", false
+		return nil, "99", "Format error, customer's email is required", false
 	}
 
 	booking := entities.Booking{

@@ -35,11 +35,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4d8098f34cbe24bff412264f72d90114fb151bd377be377d175b814fdab5a8b9"
+  digest = "1:0e0253daf85d5d9eddd8b60b1134b1fd237c52808eaebc25b9f199d6bfb6c633"
   name = "github.com/Zurin/logrus"
   packages = ["."]
   pruneopts = ""
-  revision = "211deb7f2108d454c32447493c1162d5c1f4e97e"
+  revision = "d68c8c97e55e9097da5f0ab3afaee9107e40a9d8"
 
 [[projects]]
   branch = "master"
@@ -173,12 +173,12 @@
   version = "v0.17.0"
 
 [[projects]]
-  digest = "1:387627c55b54e4c11ebc64cd772dd7503d96fcb86c893c33399b63aef6c387da"
+  digest = "1:415591ae88c430905b72ffef1d19380bd7feda96dd08eb5cd45a23e5dc04f397"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = ""
-  revision = "5d5b4c10bd43f85e63bd9e4a3fa9b1ea2ef88af2"
-  version = "v1.3.4"
+  revision = "84668698ea25b64748563aa20726db66a6b8d299"
+  version = "v1.3.5"
 
 [[projects]]
   digest = "1:03168f6041f164c06dc6acaaab4ed3ad1c6088b717c365cec892b35c80f4ffc7"
@@ -325,6 +325,14 @@
   version = "v2.2.0"
 
 [[projects]]
+  digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  pruneopts = ""
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:1a405cddcf3368445051fb70ab465ae99da56ad7be8d8ca7fc52159d1c2d873c"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
@@ -397,14 +405,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a5ecec7a7007b0af5622967f39375001299ca9559c8028617bbf846ac37bb398"
+  digest = "1:0cb9af7d99926126ac7414b3d3e7e42b96d4b03ebba66972ac984e94c47e606e"
   name = "golang.org/x/crypto"
   packages = [
     "bcrypt",
     "blowfish",
   ]
   pruneopts = ""
-  revision = "78000ba7a073cafc0278790f6bce552a0f25850e"
+  revision = "f7b00557c8c46a1ea4b035cae84f52028c2c0564"
 
 [[projects]]
   branch = "master"
@@ -459,7 +467,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0f54a45ce726f89c542e1abb84aec785f014669196f565dfce0fb8bca5d972c8"
+  digest = "1:c426bb8492e0f44b118c300ab02df121270378cdba7623d557766e8fc37576bc"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -468,7 +476,7 @@
     "go/loader",
   ]
   pruneopts = ""
-  revision = "aafaee8bce8c38f7ce09907ff7430abcb6f58132"
+  revision = "4303120df7d88143fd0803f9144b4f47ad3ea9fb"
 
 [[projects]]
   branch = "v3"
@@ -531,6 +539,7 @@
     "github.com/jinzhu/gorm",
     "github.com/jinzhu/gorm/dialects/postgres",
     "github.com/patrickmn/go-cache",
+    "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
     "github.com/swaggo/gin-swagger",
     "github.com/swaggo/gin-swagger/swaggerFiles",
