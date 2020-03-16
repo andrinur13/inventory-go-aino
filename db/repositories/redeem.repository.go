@@ -9,7 +9,6 @@ import (
 	"twc-ota-api/db/entities"
 	"twc-ota-api/requests"
 
-	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/gomail.v2"
 )
@@ -24,15 +23,16 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 	var dataTrf []entities.TrfResponse
 
 	var bookings []entities.Booking
-	if err := db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings).Error; gorm.IsRecordNotFoundError(err) {
-		return nil, "02", "Booking data not found (" + err.Error() + ")", false
-	}
+	db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings)
 
 	if len(bookings) == 0 {
 		return nil, "02", "Booking data not found", false
 	}
 
 	for _, booking := range bookings {
+		if len(booking.Booking_redeem_date) > 0 {
+			return nil, "11", "Ticket already redeemed", false
+		}
 		stan := time.Now().UnixNano()
 		tickID := uuid.NewV4()
 		tick := entities.TickModel{
@@ -57,11 +57,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 
 		var bookingdets []entities.Bookingdet
 
-		if err := db.DB[0].Where("bookingdet_booking_id = ?", booking.Booking_id).Find(&bookingdets).Error; gorm.IsRecordNotFoundError(err) {
-			db.DB[0].Where("tickdet_tick_id = ?", tick.Tick_id).Delete(entities.TickDetModel{})
-			db.DB[0].Where("tick_id = ?", tick.Tick_id).Delete(entities.TickModel{})
-			return nil, "04", "Bookingdet data not found (" + err.Error() + ")", false
-		}
+		db.DB[0].Where("bookingdet_booking_id = ?", booking.Booking_id).Find(&bookingdets)
 
 		if len(bookingdets) == 0 {
 			db.DB[0].Where("tickdet_tick_id = ?", tick.Tick_id).Delete(entities.TickModel{})
@@ -82,6 +78,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 				Tickdet_total:   bookingdet.Bookingdet_total,
 				Tickdet_trf_id:  bookingdet.Bookingdet_trf_id,
 				Tickdet_trftype: bookingdet.Bookingdet_trftype,
+				Ext:             `{"void": {"status": false}, "refund": {"status": false}, "cashback": {"status": false}, "nationality": "ID"}`,
 			}
 			db.DB[0].NewRecord(tickdet)
 
@@ -92,12 +89,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			}
 
 			var bookinglists []entities.Bookinglist
-			if err := db.DB[0].Where("bookinglist_bookingdet_id = ?", bookingdet.Bookingdet_id).Find(&bookinglists).Error; gorm.IsRecordNotFoundError(err) {
-				db.DB[0].Where("ticklist_tickdet_id = ?", tickdetID).Delete(entities.TickListModel{})
-				db.DB[0].Where("tickdet_tick_id = ?", tick.Tick_id).Delete(entities.TickDetModel{})
-				db.DB[0].Where("tick_id = ?", tick.Tick_id).Delete(entities.TickModel{})
-				return nil, "06", "Bookinglist data not found (" + err.Error() + ")", false
-			}
+			db.DB[0].Where("bookinglist_bookingdet_id = ?", bookingdet.Bookingdet_id).Find(&bookinglists)
 
 			if len(bookinglists) == 0 {
 				db.DB[0].Where("ticklist_tickdet_id = ?", tickdetID).Delete(entities.TickListModel{})
@@ -138,6 +130,12 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			dataTrf = append(dataTrf, tmpTrf)
 			qrString := strings.ReplaceAll(qrCode, "#", "%23")
 			qrImage = qrImage + `<img src="https://chart.apis.google.com/chart?cht=qr&chs=300x300&chl=` + `TIC` + qrString + `&chld=H|0" />`
+		}
+		var book entities.Booking
+		db.DB[0].Where("booking_id = ?", booking.Booking_id).Find(&book)
+		book.Booking_redeem_date = time.Now().Format("2006-01-02 15:04:05")
+		if err := db.DB[0].Save(&book).Error; err != nil {
+			return nil, "07", "Error when updating booking data (" + err.Error() + ")", false
 		}
 	}
 

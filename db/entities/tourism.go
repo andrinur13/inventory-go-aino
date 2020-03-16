@@ -63,8 +63,8 @@ type TickDetModel struct {
 	Tickdet_amount  float32
 	Tickdet_qty     int
 	Tickdet_total   float32
-	Tickdet_qr      string `gorm:"type:text"`
-	Ext             string `gorm:"default:'{"void": {"status": false}, "refund": {"status": false}, "cashback": {"status": false}, "nationality": "ID"}'::jsonb"`
+	Tickdet_qr      string
+	Ext             string
 }
 
 func (TickDetModel) TableName() string {
