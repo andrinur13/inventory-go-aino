@@ -68,3 +68,7 @@ fabric.properties
 
 /logs
 logs/*
+/vendor/
+/vendor/*
+vendor/
+vendor/*

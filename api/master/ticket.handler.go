@@ -3,6 +3,7 @@ package master
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -109,6 +110,9 @@ func BookingTicket(c *gin.Context) {
 
 //Tes : for testing purpose
 func Tes(c *gin.Context) {
+	str := "auduwadu#14257384"
+	rplc := strings.Replace(str, "#", "%23", -1)
+	log.Print(rplc)
 	data := map[string]interface{}{
 		"dummy": "This is dummy data",
 	}

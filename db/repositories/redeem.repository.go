@@ -128,7 +128,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			}
 
 			dataTrf = append(dataTrf, tmpTrf)
-			qrString := strings.ReplaceAll(qrCode, "#", "%23")
+			qrString := strings.Replace(qrCode, "#", "%23", -1)
 			qrImage = qrImage + `<img src="https://chart.apis.google.com/chart?cht=qr&chs=300x300&chl=` + `TIC` + qrString + `&chld=H|0" />`
 		}
 		var book entities.Booking
