@@ -66,8 +66,5 @@ fabric.properties
 # Editor-based Rest Client
 .idea/httpRequests
 
-
-/vendor
-/_vendor-20190714114625
 /logs
 logs/*
