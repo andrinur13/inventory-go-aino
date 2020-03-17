@@ -35,6 +35,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		}
 		stan := time.Now().UnixNano()
 		tickID := uuid.NewV4()
+
 		tick := entities.TickModel{
 			Tick_id:             tickID,
 			Tick_amount:         booking.Booking_amount,
@@ -47,7 +48,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			Tick_purc:           time.Now().Format("2006-01-02 15:04:05"),
 			Tick_src_type:       5,
 			Tick_total_payment:  booking.Booking_total_payment,
-			Tick_stan:           int8(stan),
+			Tick_stan:           int(stan),
 		}
 		db.DB[0].NewRecord(tick)
 

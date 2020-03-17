@@ -40,6 +40,10 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		return nil, "99", "Format error, customer's email is required", false
 	}
 
+	if len(r.Trf) == 0 {
+		return nil, "99", "Format error, please complete tarif's payload", false
+	}
+
 	booking := entities.Booking{
 		Agent_id:               token.Typeid,
 		Booking_number:         r.BookingNumber,

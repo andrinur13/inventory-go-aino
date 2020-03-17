@@ -36,7 +36,7 @@ type TourismTickInsert struct {
 
 type TickModel struct {
 	Tick_id             uuid.UUID
-	Tick_stan           int8
+	Tick_stan           int
 	Tick_number         string
 	Tick_mid            string
 	Tick_src_type       int
