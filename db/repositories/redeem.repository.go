@@ -20,6 +20,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 	}
 
 	var qrImage string
+	var data []entities.RedeemResponse
 	var dataTrf []entities.TrfResponse
 
 	var bookings []entities.Booking
@@ -35,6 +36,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		}
 		stan := time.Now().UnixNano()
 		tickID := uuid.NewV4()
+		billID := "TWC.5." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(stan, 10)
 
 		tick := entities.TickModel{
 			Tick_id:             tickID,
@@ -43,12 +45,13 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			Tick_emoney:         booking.Booking_emoney,
 			Tick_issuing:        booking.Booking_date,
 			Tick_mid:            booking.Booking_mid,
-			Tick_number:         booking.Booking_number,
+			Tick_src_inv_num:    booking.Booking_number,
 			Tick_payment_method: booking.Booking_payment_method,
 			Tick_purc:           time.Now().Format("2006-01-02 15:04:05"),
 			Tick_src_type:       5,
 			Tick_total_payment:  booking.Booking_total_payment,
 			Tick_stan:           int(stan),
+			Tick_number:         billID,
 		}
 		db.DB[0].NewRecord(tick)
 
@@ -129,6 +132,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			}
 
 			dataTrf = append(dataTrf, tmpTrf)
+
 			qrString := strings.Replace(qrCode, "#", "%23", -1)
 			qrImage = qrImage + `<img src="https://chart.apis.google.com/chart?cht=qr&chs=300x300&chl=` + `TIC` + qrString + `&chld=H|0" />`
 		}
@@ -138,6 +142,13 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		if err := db.DB[0].Save(&book).Error; err != nil {
 			return nil, "07", "Error when updating booking data (" + err.Error() + ")", false
 		}
+
+		tmpData := entities.RedeemResponse{
+			BillID: billID,
+			Trf:    dataTrf,
+		}
+
+		data = append(data, tmpData)
 	}
 
 	m := gomail.NewMessage()
@@ -201,6 +212,6 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		}, "08", "Redeem success, but an error occurred when sending e-mail (" + err.Error() + ")", true
 	}
 	return map[string]interface{}{
-		"trf_data": dataTrf,
+		"redeem_data": data,
 	}, "01", "Redeem success, email sent", true
 }

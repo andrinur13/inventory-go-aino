@@ -12,6 +12,7 @@ type Booking struct {
 	Booking_payment_method string
 	Booking_uuid           string `gorm:"type:uuid;not null;default:uuid_generate_v4()"`
 	Booking_redeem_date    string `gorm:"null;default:null"`
+	Booking_invoice        string
 	Customer_note          string
 	Customer_email         string
 	Customer_username      string

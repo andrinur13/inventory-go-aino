@@ -83,6 +83,11 @@ func (TickListModel) TableName() string {
 	return "ticketlist"
 }
 
+type RedeemResponse struct {
+	BillID string        `json:"bill_id"`
+	Trf    []TrfResponse `json:"trf_data"`
+}
+
 type TrfResponse struct {
 	TickDetID      uuid.UUID `json:"ticket_id"`
 	TickDetTrfID   int       `json:"ticket_trf_id"`

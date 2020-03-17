@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"strconv"
+	"time"
 	"twc-ota-api/config"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
@@ -44,6 +46,9 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		return nil, "99", "Format error, please complete tarif's payload", false
 	}
 
+	stan := time.Now().UnixNano()
+	invNumber := r.Mbmid + "." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(stan, 10)
+
 	booking := entities.Booking{
 		Agent_id:               token.Typeid,
 		Booking_number:         r.BookingNumber,
@@ -57,6 +62,7 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		Customer_phone:         r.Phone,
 		Customer_username:      r.Username,
 		Customer_note:          r.Note,
+		Booking_invoice:        invNumber,
 	}
 
 	db.DB[0].NewRecord(booking)
@@ -181,6 +187,7 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		</div>
 		<div class="container">
 			<p>UUID: `+booking.Booking_uuid+`</p>
+			<p>Invoice number: `+invNumber+`</p>
 			<p>Booking number: <span class="promo">`+booking.Booking_number+`</span></p>
 		</div>
 		</div>
@@ -209,8 +216,9 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 	return map[string]interface{}{
 		"data_tariff": r.Trf,
 		"booking_detail": map[string]interface{}{
-			"booking_UUID":   booking.Booking_uuid,
-			"booking_number": booking.Booking_number,
+			"booking_UUID":           booking.Booking_uuid,
+			"booking_invoice_number": invNumber,
+			"booking_number":         booking.Booking_number,
 		},
 	}, "01", "Booking success, email sent", true
 }
