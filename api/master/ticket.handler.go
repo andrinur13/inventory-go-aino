@@ -3,10 +3,10 @@ package master
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"twc-ota-api/db/repositories"
 	"twc-ota-api/logger"
 	"twc-ota-api/middleware"
@@ -110,11 +110,15 @@ func BookingTicket(c *gin.Context) {
 
 //Tes : for testing purpose
 func Tes(c *gin.Context) {
-	str := "auduwadu#14257384"
-	rplc := strings.Replace(str, "#", "%23", -1)
-	log.Print(rplc)
+	nano := time.Now().UnixNano()
+	unix := time.Now().Unix()
+	micro := nano / (int64(time.Millisecond) / int64(time.Nanosecond))
+
 	data := map[string]interface{}{
-		"dummy": "This is dummy data",
+		"second": unix,
+		"micro":  micro,
+		"nano":   nano,
+		"dummy":  "This is dummy data",
 	}
 	c.JSON(http.StatusOK, builder.ApiResponse(true, "Success testing auth", "01", data))
 }

@@ -35,8 +35,9 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			return nil, "11", "Ticket already redeemed", false
 		}
 		stan := time.Now().UnixNano()
+		microStan := stan / (int64(time.Millisecond) / int64(time.Nanosecond))
 		tickID := uuid.NewV4()
-		billID := "TWC.5." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(stan, 10)
+		billID := "TWC.5." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(microStan, 10)
 
 		tick := entities.TickModel{
 			Tick_id:             tickID,
