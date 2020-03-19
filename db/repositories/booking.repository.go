@@ -34,10 +34,6 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		return nil, "99", "Format error, emoney is required", false
 	}
 
-	if r.PayMethod == "" {
-		return nil, "99", "Format error, payment method is required", false
-	}
-
 	if r.Email == "" {
 		return nil, "99", "Format error, customer's email is required", false
 	}
@@ -50,19 +46,18 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 	invNumber := r.Mbmid + "." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(stan, 10)
 
 	booking := entities.Booking{
-		Agent_id:               token.Typeid,
-		Booking_number:         r.BookingNumber,
-		Booking_date:           r.BookingDate,
-		Booking_mid:            r.Mbmid,
-		Booking_amount:         r.PayAmt,
-		Booking_emoney:         r.Emoney,
-		Booking_total_payment:  r.PayAmt,
-		Booking_payment_method: r.PayMethod,
-		Customer_email:         r.Email,
-		Customer_phone:         r.Phone,
-		Customer_username:      r.Username,
-		Customer_note:          r.Note,
-		Booking_invoice:        invNumber,
+		Agent_id:              token.Typeid,
+		Booking_number:        r.BookingNumber,
+		Booking_date:          r.BookingDate,
+		Booking_mid:           r.Mbmid,
+		Booking_amount:        r.PayAmt,
+		Booking_emoney:        r.Emoney,
+		Booking_total_payment: r.PayAmt,
+		Customer_email:        r.Email,
+		Customer_phone:        r.Phone,
+		Customer_username:     r.Username,
+		Customer_note:         r.Note,
+		Booking_invoice:       invNumber,
 	}
 
 	db.DB[0].NewRecord(booking)

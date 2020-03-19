@@ -35,20 +35,19 @@ type TourismTickInsert struct {
 }
 
 type TickModel struct {
-	Tick_id             uuid.UUID
-	Tick_stan           int
-	Tick_number         string
-	Tick_mid            string
-	Tick_src_type       int
-	Tick_src_id         string
-	Tick_src_inv_num    string
-	Tick_amount         float32
-	Tick_emoney         int
-	Tick_purc           string
-	Tick_issuing        string
-	Tick_date           string
-	Tick_total_payment  float32
-	Tick_payment_method string
+	Tick_id            uuid.UUID
+	Tick_stan          int
+	Tick_number        string
+	Tick_mid           string
+	Tick_src_type      int
+	Tick_src_id        string
+	Tick_src_inv_num   string
+	Tick_amount        float32
+	Tick_emoney        int
+	Tick_purc          string
+	Tick_issuing       string
+	Tick_date          string
+	Tick_total_payment float32
 }
 
 func (TickModel) TableName() string {

@@ -42,20 +42,19 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		billID := "TWC.5." + strconv.Itoa(booking.Agent_id) + "." + strconv.FormatInt(microStan, 10)
 
 		tick := entities.TickModel{
-			Tick_id:             tickID,
-			Tick_amount:         booking.Booking_amount,
-			Tick_date:           booking.Booking_date,
-			Tick_emoney:         booking.Booking_emoney,
-			Tick_issuing:        booking.Booking_date,
-			Tick_mid:            booking.Booking_mid,
-			Tick_src_inv_num:    booking.Booking_number,
-			Tick_payment_method: booking.Booking_payment_method,
-			Tick_purc:           time.Now().Format("2006-01-02 15:04:05"),
-			Tick_src_type:       5,
-			Tick_total_payment:  booking.Booking_total_payment,
-			Tick_stan:           int(stan),
-			Tick_number:         billID,
-			Tick_src_id:         strconv.Itoa(booking.Agent_id),
+			Tick_id:            tickID,
+			Tick_amount:        booking.Booking_amount,
+			Tick_date:          booking.Booking_date,
+			Tick_emoney:        booking.Booking_emoney,
+			Tick_issuing:       booking.Booking_date,
+			Tick_mid:           booking.Booking_mid,
+			Tick_src_inv_num:   booking.Booking_number,
+			Tick_purc:          time.Now().Format("2006-01-02 15:04:05"),
+			Tick_src_type:      5,
+			Tick_total_payment: booking.Booking_total_payment,
+			Tick_stan:          int(stan),
+			Tick_number:        billID,
+			Tick_src_id:        strconv.Itoa(booking.Agent_id),
 		}
 		db.DB[0].NewRecord(tick)
 

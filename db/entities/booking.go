@@ -1,22 +1,21 @@
 package entities
 
 type Booking struct {
-	Booking_id             uint `gorm:"primary_key"`
-	Agent_id               int
-	Booking_number         string
-	Booking_date           string
-	Booking_mid            string
-	Booking_amount         float32
-	Booking_emoney         int
-	Booking_total_payment  float32
-	Booking_payment_method string
-	Booking_uuid           string `gorm:"type:uuid;not null;default:uuid_generate_v4()"`
-	Booking_redeem_date    string `gorm:"null;default:null"`
-	Booking_invoice        string
-	Customer_note          string
-	Customer_email         string
-	Customer_username      string
-	Customer_phone         string
+	Booking_id            uint `gorm:"primary_key"`
+	Agent_id              int
+	Booking_number        string
+	Booking_date          string
+	Booking_mid           string
+	Booking_amount        float32
+	Booking_emoney        int
+	Booking_total_payment float32
+	Booking_uuid          string `gorm:"type:uuid;not null;default:uuid_generate_v4()"`
+	Booking_redeem_date   string `gorm:"null;default:null"`
+	Booking_invoice       string
+	Customer_note         string
+	Customer_email        string
+	Customer_username     string
+	Customer_phone        string
 }
 
 func (Booking) TableName() string {

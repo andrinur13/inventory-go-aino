@@ -6,7 +6,6 @@ type BookingReq struct {
 	BookingDate   string    `json:"booking_date"`
 	PayAmt        float32   `json:"pay_amount"`
 	Emoney        int       `json:"emoney"`
-	PayMethod     string    `json:"payment_method"`
 	Username      string    `json:"customer_username"`
 	Email         string    `json:"customer_email"`
 	Phone         string    `json:"customer_phone"`
