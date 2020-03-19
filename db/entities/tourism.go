@@ -75,8 +75,8 @@ type TickListModel struct {
 	Ticklist_id         uuid.UUID
 	Ticklist_tickdet_id uuid.UUID
 	Ticklist_mtick_id   int
-	// Ticklist_expire     string
-	Ticklist_mid string
+	Ticklist_expire     string
+	Ticklist_mid        string
 }
 
 func (TickListModel) TableName() string {
@@ -95,4 +95,8 @@ type TrfResponse struct {
 	TickDetAmount  float32   `json:"ticket_amount"`
 	TickDetQty     int       `json:"ticket_qty"`
 	TickDetQr      string    `json:"ticket_qr"`
+}
+
+type GetExpiredQR struct {
+	Expiredqr int
 }

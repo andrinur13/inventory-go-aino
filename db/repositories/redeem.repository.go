@@ -9,6 +9,7 @@ import (
 	"twc-ota-api/db/entities"
 	"twc-ota-api/requests"
 
+	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/gomail.v2"
 )
@@ -22,6 +23,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 	var qrImage string
 	var data []entities.RedeemResponse
 	var dataTrf []entities.TrfResponse
+	var redeemDate = time.Now()
 
 	var bookings []entities.Booking
 	db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings)
@@ -37,7 +39,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		stan := time.Now().UnixNano()
 		microStan := stan / (int64(time.Millisecond) / int64(time.Nanosecond))
 		tickID := uuid.NewV4()
-		billID := "TWC.5." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(microStan, 10)
+		billID := "TWC.5." + strconv.Itoa(booking.Agent_id) + "." + strconv.FormatInt(microStan, 10)
 
 		tick := entities.TickModel{
 			Tick_id:             tickID,
@@ -104,6 +106,19 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 				return nil, "06", "Bookinglist data not found", false
 			}
 
+			var exp entities.GetExpiredQR
+			if err := db.DB[0].Raw(`select coalesce(cast(trf_condition->>'expiredQr' as integer), 0) as expiredqr
+							from master_tariff mt
+							where trf_id = ?`, bookingdet.Bookingdet_trf_id).Scan(&exp).Error; gorm.IsRecordNotFoundError(err) {
+				db.DB[0].Where("ticklist_tickdet_id = ?", tickdetID).Delete(entities.TickListModel{})
+				db.DB[0].Where("tickdet_tick_id = ?", tick.Tick_id).Delete(entities.TickDetModel{})
+				db.DB[0].Where("tick_id = ?", tick.Tick_id).Delete(entities.TickModel{})
+				return nil, "13", "Tariff condition data not found", false
+			}
+
+			hour := (exp.Expiredqr * 24)
+			dateExpired := redeemDate.Add(time.Hour * time.Duration(hour)).Format("2006-01-02 15:04:05")
+
 			for _, bookinglist := range bookinglists {
 				ticklistID := uuid.NewV4()
 
@@ -112,6 +127,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 					Ticklist_mid:        bookinglist.Bookinglist_mid,
 					Ticklist_tickdet_id: tickdetID,
 					Ticklist_mtick_id:   bookinglist.Bookinglist_mtick_id,
+					Ticklist_expire:     dateExpired,
 				}
 
 				db.DB[0].NewRecord(ticklist)
@@ -140,7 +156,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		}
 		var book entities.Booking
 		db.DB[0].Where("booking_id = ?", booking.Booking_id).Find(&book)
-		book.Booking_redeem_date = time.Now().Format("2006-01-02 15:04:05")
+		book.Booking_redeem_date = redeemDate.Format("2006-01-02 15:04:05")
 		if err := db.DB[0].Save(&book).Error; err != nil {
 			return nil, "07", "Error when updating booking data (" + err.Error() + ")", false
 		}
