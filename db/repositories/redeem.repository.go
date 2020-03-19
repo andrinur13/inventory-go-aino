@@ -53,7 +53,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			Tick_total_payment:  booking.Booking_total_payment,
 			Tick_stan:           int(stan),
 			Tick_number:         billID,
-			Tick_src_id:         strconv.Itoa(token.Typeid),
+			Tick_src_id:         strconv.Itoa(booking.Agent_id),
 		}
 		db.DB[0].NewRecord(tick)
 
