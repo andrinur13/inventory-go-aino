@@ -170,8 +170,8 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", config.Mail.Email)
-	m.SetHeader("To", "rinoridlojulianto@gmail.com")
-	m.SetHeader("Subject", "Booking detail")
+	m.SetHeader("To", bookings[0].Customer_email)
+	m.SetHeader("Subject", "Redeem detail")
 	m.SetBody("text/html", `
 	<html>
   		<head>
