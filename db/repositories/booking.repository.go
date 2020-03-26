@@ -202,8 +202,9 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		return map[string]interface{}{
 			"data_tariff": r.Trf,
 			"booking_detail": map[string]interface{}{
-				"booking_UUID":   booking.Booking_uuid,
-				"booking_number": booking.Booking_number,
+				"booking_UUID":           booking.Booking_uuid,
+				"booking_invoice_number": invNumber,
+				"booking_number":         booking.Booking_number,
 			},
 		}, "08", "Booking success, but an error occurred when sending e-mail (" + err.Error() + ")", true
 	}
