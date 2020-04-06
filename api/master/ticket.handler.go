@@ -27,6 +27,7 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 		ticket.POST("/list", permission.Set("PERMISSION_MASTER_USER_VIEW", GetTicketList))
 		ticket.POST("/booking", permission.Set("PERMISSION_MASTER_USER_SAVE", BookingTicket))
 		ticket.POST("/redeem", permission.Set("PERMISSION_MASTER_USER_SAVE", RedeemTicket))
+		ticket.POST("/checkout", permission.Set("PERMISSION_MASTER_USER_SAVE", CheckoutTicket))
 		ticket.POST("/tes", permission.Set("PERMISSION_MASTER_USER_VIEW", Tes))
 	}
 }
@@ -96,6 +97,31 @@ func BookingTicket(c *gin.Context) {
 	userData := middleware.Decode(split[1])
 
 	data, code, msg, stat := repositories.BookingTicket(userData, &param)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
+// CheckoutTicket : checkout ticket
+func CheckoutTicket(c *gin.Context) {
+	var param requests.RedeemReq
+	c.BindJSON(&param)
+
+	in, _ := json.Marshal(param)
+
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	data, code, msg, stat := repositories.RedeemTicket(userData, &param)
 
 	out, _ := json.Marshal(data)
 

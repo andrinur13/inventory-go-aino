@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"twc-ota-api/api"
 	"twc-ota-api/config"
 	"twc-ota-api/db"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
-	"go.elastic.co/apm/module/apmgin"
 
 	_ "twc-ota-api/docs"
 )
@@ -28,20 +26,11 @@ func main() {
 	db.Init()
 	cm := service.InitCache()
 
-	os.Setenv("ELASTIC_APM_SERVER_URL", "http://apm-server.dev.ainosi.com/")
-	defer os.Unsetenv("ELASTIC_APM_SERVER_URL")
-
-	os.Setenv("ELASTIC_APM_SERVICE_NAME", "tnt-api")
-	defer os.Unsetenv("ELASTIC_APM_SERVICE_NAME")
-
-	os.Setenv("ELASTIC_APM_VERIFY_SERVER_CERT", "false")
-	defer os.Unsetenv("ELASTIC_APM_VERIFY_SERVER_CERT")
-
-	// router := gin.Default()
-	router := gin.New()
+	router := gin.Default()
+	// router := gin.New()
 	// router.Use(middleware.Auth(cm))
 	//APM
-	router.Use(apmgin.Middleware(router))
+	// router.Use(apmgin.Middleware(router))
 
 	api.Init(router, cm)
 	api.InitWebsocket(router)

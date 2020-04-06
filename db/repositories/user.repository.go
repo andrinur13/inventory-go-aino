@@ -20,7 +20,7 @@ func GetUser(r interface{}) (map[string]interface{}, string, string, bool) {
 		return nil, "99", "Email or password cant't be empty", false
 	}
 
-	if err := db.DB[0].Where("email = ? AND type = 'AT'", email).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
+	if err := db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR')", email).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Email not registered (" + err.Error() + ")", false
 	}
 

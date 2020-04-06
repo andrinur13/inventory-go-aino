@@ -25,6 +25,7 @@ func CreateJwtToken(data *entities.Users) (string, error) {
 	/* Set token claims */
 	claims["authorized"] = true
 	claims["user"] = "useragent"
+	claims["user_id"] = data.ID
 	claims["email"] = data.Email
 	claims["agent_id"] = data.Typeid
 	// exp, _ := time.ParseDuration(os.Getenv("JWT_EXPIRED_DURATION"))
