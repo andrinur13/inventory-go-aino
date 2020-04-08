@@ -14,7 +14,7 @@ type Header struct {
 	EndDate     string  `json:"enddate"`
 	Duration    int     `json:"duration"`
 	InvNumber   string  `json:"inv_number"`
-	TotalAmount int     `json:"total_amount"`
+	TotalAmount float32 `json:"total_amount"`
 	Contact     Contact `json:"contact"`
 }
 type Contact struct {
@@ -33,15 +33,15 @@ type Trip struct {
 }
 
 type Destination struct {
-	Mid          string `json:"group_mid"`
-	GroupName    string `json:"group_name"`
-	Duration     int    `json:"duration"`
-	TrfAdult     int    `json:"trf_adult"`
-	TrfChild     int    `json:"trf_child"`
-	Operational  string `json:"operational"`
-	Total        int    `json:"total"`
-	Trf_id_adult int    `json:"trf_id_adult"`
-	Trf_id_child int    `json:"trf_id_child"`
+	Mid          string  `json:"group_mid"`
+	GroupName    string  `json:"group_name"`
+	Duration     int     `json:"duration"`
+	TrfAdult     float32 `json:"trf_adult"`
+	TrfChild     float32 `json:"trf_child"`
+	Operational  string  `json:"operational"`
+	Total        float32 `json:"total"`
+	Trf_id_adult int     `json:"trf_id_adult"`
+	Trf_id_child int     `json:"trf_id_child"`
 }
 
 type Person struct {
@@ -73,7 +73,6 @@ type TripModel struct {
 	Tp_extras       string
 	Tp_invoice      int
 	Created_at      string
-	Updated_at      string
 }
 
 func (TripModel) TableName() string {
@@ -88,7 +87,6 @@ type PersonModel struct {
 	Tpp_qr     string
 	Tpp_extras string
 	Created_at string
-	Updated_at string
 }
 
 func (PersonModel) TableName() string {
@@ -107,9 +105,35 @@ type DestinationModel struct {
 	Tpd_duration  int
 	Tpd_extras    string
 	Created_at    string
-	Updated_at    string
 }
 
 func (DestinationModel) TableName() string {
 	return "trip_planner_destination"
+}
+
+type QRTripRes struct {
+	Type   string    `json:"person_type"`
+	QRcode string    `json:"qr_code"`
+	ID     string    `json:"id"`
+	Name   string    `json:"name"`
+	Title  string    `json:"title"`
+	TypeID string    `json:"typeid"`
+	Trip   []TripDay `json:"trip"`
+}
+
+type TripDay struct {
+	Day         int    `json:"day"`
+	Tanggal     string `json:"tanggal"`
+	Date        string `json:"date"`
+	ExpiredDate string `json:"expired_date"`
+	Destination []Dest `json:"destination"`
+}
+
+type Dest struct {
+	Mid         string  `json:"group_mid"`
+	GroupName   string  `json:"group_name"`
+	Duration    int     `json:"duration"`
+	Operational string  `json:"operational"`
+	Amount      float32 `json:"amount"`
+	Trf_id      int     `json:"trf_id"`
 }

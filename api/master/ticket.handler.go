@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"twc-ota-api/db/entities"
 	"twc-ota-api/db/repositories"
 	"twc-ota-api/logger"
 	"twc-ota-api/middleware"
@@ -111,7 +112,7 @@ func BookingTicket(c *gin.Context) {
 
 // CheckoutTicket : checkout ticket
 func CheckoutTicket(c *gin.Context) {
-	var param requests.RedeemReq
+	var param entities.CheckOutReq
 	c.BindJSON(&param)
 
 	in, _ := json.Marshal(param)
@@ -121,7 +122,7 @@ func CheckoutTicket(c *gin.Context) {
 
 	userData := middleware.Decode(split[1])
 
-	data, code, msg, stat := repositories.RedeemTicket(userData, &param)
+	data, code, msg, stat := repositories.CheckoutB2B(userData, &param)
 
 	out, _ := json.Marshal(data)
 

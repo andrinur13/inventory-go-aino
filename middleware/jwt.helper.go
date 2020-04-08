@@ -77,10 +77,12 @@ func Decode(tokenString string) *entities.Users {
 
 	email := claims["email"].(string)
 	agentID := claims["agent_id"].(float64)
+	userID := claims["user_id"].(float64)
 
 	resp := entities.Users{
 		Email:  email,
 		Typeid: int(agentID),
+		ID:     int(userID),
 	}
 
 	return &resp
