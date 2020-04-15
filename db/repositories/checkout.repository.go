@@ -203,7 +203,7 @@ func CheckoutB2B(token *entities.Users, r *entities.CheckOutReq) (map[string]int
 					Mid:         dest.Mid,
 					Operational: dest.Operational,
 					Amount:      dest.TrfChild,
-					Trf_id:      dest.Trf_id_adult,
+					Trf_id:      dest.Trf_id_child,
 				}
 
 				dataDest = append(dataDest, tmpDest)
