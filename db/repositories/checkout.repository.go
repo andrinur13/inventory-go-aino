@@ -12,6 +12,10 @@ import (
 
 // CheckoutB2B : b2b checkout ticket
 func CheckoutB2B(token *entities.Users, r *entities.CheckOutReq) (map[string]interface{}, string, string, bool) {
+	if len(r.Person.Adult) == 0 {
+		return nil, "99", "Invalid person", false
+	}
+
 	rTrip, err := json.Marshal(&r.Trip)
 	if err != nil {
 		return nil, "99", "Failed to parse json key trip (" + err.Error() + ")", false
@@ -90,9 +94,16 @@ func CheckoutB2B(token *entities.Users, r *entities.CheckOutReq) (map[string]int
 
 		for _, trip := range r.Trip {
 
+			if len(trip.Destination) == 0 {
+				return nil, "99", "Invalid destination", false
+			}
+
 			var dataDest []entities.Dest
 
 			for _, dest := range trip.Destination {
+				if dest.Trf_id_adult == 0 || dest.TrfAdult == 0 || dest.Total == 0 || dest.Mid == "" || dest.GroupName == "" {
+					return nil, "99", "Invalid destination", false
+				}
 				tpdID := uuid.NewV4()
 				tripDest := entities.DestinationModel{
 					Tpd_id:        tpdID,
@@ -173,9 +184,16 @@ func CheckoutB2B(token *entities.Users, r *entities.CheckOutReq) (map[string]int
 
 		for _, trip := range r.Trip {
 
+			if len(trip.Destination) == 0 {
+				return nil, "99", "Invalid destination", false
+			}
+
 			var dataDest []entities.Dest
 
 			for _, dest := range trip.Destination {
+				if dest.Trf_id_child == 0 || dest.TrfChild == 0 || dest.Total == 0 || dest.Mid == "" || dest.GroupName == "" {
+					return nil, "99", "Invalid destination", false
+				}
 				tpdID := uuid.NewV4()
 				tripDest := entities.DestinationModel{
 					Tpd_id:        tpdID,
