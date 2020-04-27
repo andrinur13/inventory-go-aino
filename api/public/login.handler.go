@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"twc-ota-api/db/entities"
 	"twc-ota-api/db/repositories"
 	"twc-ota-api/logger"
 	"twc-ota-api/middleware"
@@ -15,6 +16,7 @@ import (
 // LoginRouter : for handling login route
 func LoginRouter(r *gin.RouterGroup, permission middleware.Permission) {
 	r.POST("/login", login)
+	r.POST("/register", register)
 }
 
 func login(c *gin.Context) {
@@ -26,6 +28,18 @@ func login(c *gin.Context) {
 
 	// token, _ := middleware.CreateJwtToken(dataMerchant)
 	data, code, msg, stat := repositories.GetUser(req)
+
+	// c.JSON(http.StatusOK, builder.BaseResponse(true, "ok", nil))
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
+func register(c *gin.Context) {
+	var req entities.UserReq
+	c.BindJSON(&req)
+	in, _ := json.Marshal(req)
+
+	data, code, msg, stat := repositories.InsertUser(req)
 
 	// c.JSON(http.StatusOK, builder.BaseResponse(true, "ok", nil))
 	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
