@@ -62,6 +62,7 @@ func CheckoutB2B(token *entities.Users, r *entities.CheckOutReq) (map[string]int
 		Tp_total_amount: r.Header.TotalAmount,
 		Tp_extras:       jExtras,
 		Tp_user_id:      token.ID,
+		Tp_agent_id:     token.Typeid,
 		Created_at:      time.Now().Format("2006-01-02 15:04:05"),
 	}
 

@@ -73,6 +73,7 @@ type TripModel struct {
 	Tp_extras       string
 	Tp_invoice      int
 	Created_at      string
+	Tp_agent_id     int
 }
 
 func (TripModel) TableName() string {
