@@ -34,7 +34,6 @@ func Init(router *gin.Engine, cache *service.CacheManager) {
 
 	pub := router.Group("/public")
 	{
-		public.ReceiverRouter(pub, permission)
-		public.PushRouter(pub, permission)
+		public.PublicRouter(pub, permission)
 	}
 }
