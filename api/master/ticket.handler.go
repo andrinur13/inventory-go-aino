@@ -31,6 +31,10 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 		ticket.POST("/checkout", permission.Set("PERMISSION_MASTER_USER_SAVE", CheckoutTicket))
 		ticket.POST("/tes", permission.Set("PERMISSION_MASTER_USER_VIEW", Tes))
 	}
+	agent := r.Group("/register")
+	{
+		agent.POST("/agent", permission.Set("PERMISSION_MASTER_USER_SAVE", RegisterAgent))
+	}
 }
 
 // GetTicketList : Get ticket's fare data
@@ -123,6 +127,31 @@ func CheckoutTicket(c *gin.Context) {
 	userData := middleware.Decode(split[1])
 
 	data, code, msg, stat := repositories.CheckoutB2B(userData, &param)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
+// RegisterAgent : register agent
+func RegisterAgent(c *gin.Context) {
+	var param entities.AgentReq
+	c.BindJSON(&param)
+
+	in, _ := json.Marshal(param)
+
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	data, code, msg, stat := repositories.InsertAgent(userData, &param)
 
 	out, _ := json.Marshal(data)
 
