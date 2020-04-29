@@ -72,6 +72,10 @@ func InsertAgent(token *entities.Users, r *entities.AgentReq) (map[string]interf
 		return nil, "99", "Telp number cant't be empty", false
 	}
 
+	if r.Extras.Email == "" {
+		return nil, "99", "E-mail cant't be empty", false
+	}
+
 	var checkAgent []entities.AgentModel
 
 	db.DB[1].Where("deleted_at is null and agent_name = ?", r.Agent).Find(&checkAgent)
