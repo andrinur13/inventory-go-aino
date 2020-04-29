@@ -18,7 +18,7 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
 								agent_extras ->> 'email' as email,
-								agent_extras ->> 'pic_name' as pic_name`).Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
+								agent_extras ->> 'pic_name' as pic_name`).Where("deleted_at is null").Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "No agent data found (" + err.Error() + ")", false
 	}
 
@@ -72,6 +72,14 @@ func InsertAgent(token *entities.Users, r *entities.AgentReq) (map[string]interf
 		return nil, "99", "Telp number cant't be empty", false
 	}
 
+	var checkAgent []entities.AgentModel
+
+	db.DB[1].Where("deleted_at is null and agent_name = ?", r.Agent).Find(&checkAgent)
+
+	if len(checkAgent) > 0 {
+		return nil, "02", "Agent with specified data already registered", false
+	}
+
 	rExt, err := json.Marshal(&r.Extras)
 	if err != nil {
 		return nil, "99", "Failed to parse json key contact (" + err.Error() + ")", false
@@ -101,7 +109,7 @@ func InsertAgent(token *entities.Users, r *entities.AgentReq) (map[string]interf
 	db.DB[1].NewRecord(agent)
 
 	if err := db.DB[1].Create(&agent).Error; err != nil {
-		return nil, "02", "Error when inserting agent data (" + err.Error() + ")", false
+		return nil, "03", "Error when inserting agent data (" + err.Error() + ")", false
 	}
 
 	return map[string]interface{}{
