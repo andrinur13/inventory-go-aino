@@ -30,6 +30,7 @@ func Init(router *gin.Engine, cache *service.CacheManager) {
 	{
 		// master.UserRouter(v1, permission, cache)
 		master.TicketRouter(route, permission, cache)
+		master.DiscountRouter(route, permission, cache)
 	}
 
 	pub := router.Group("/public")
