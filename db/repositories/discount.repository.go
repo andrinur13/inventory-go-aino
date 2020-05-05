@@ -22,10 +22,10 @@ func GetDiscountMulti(token *entities.Users, discountType string) (*[]entities.D
 	var discount []entities.DiscountMultiModel
 
 	if err := db.DB[1].Select(`discm_name, discm_start_date::text, discm_end_date::text, discm_destination, discm_value`).Where(`discm_group_agent_id = ?
-								and discm_type = 'AGENT'
+								and discm_type = ?
 								and current_date >= discm_start_date
 								and current_date <= discm_end_date 
-								and deleted_at is NULL`, agent.Agent_group_id).Order("discm_name, discm_destination").Find(&discount).Error; gorm.IsRecordNotFoundError(err) {
+								and deleted_at is NULL`, agent.Agent_group_id, discountType).Order("discm_name, discm_destination").Find(&discount).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "04", "Discount not found (" + err.Error() + ")", false
 	}
 
