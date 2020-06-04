@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"strconv"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
 
@@ -39,4 +40,33 @@ func GetDiscountMulti(token *entities.Users, discountType string) (*[]entities.D
 	}
 
 	return &discount, "01", "Get data discount success", true
+}
+
+//GetPrice : get price data
+func GetPrice(token *entities.Users, r *entities.GetPriceReq) (*[]entities.GetPriceRes, string, string, bool) {
+	var price []entities.GetPriceRes
+
+	for i, trf := range r.Trf {
+		tmpPrice := entities.GetPriceRes{
+			TrfID:              trf.ID,
+			TrfName:            "Coba " + strconv.Itoa(i),
+			TrfCode:            "abcd-ex",
+			TrfValue:           666,
+			Qty:                trf.Qty,
+			DiscDStatus:        true,
+			DiscDPercent:       5,
+			DiscDestination:    2500,
+			DiscAStatus:        true,
+			DiscAPercent:       5,
+			DiscAgent:          2600,
+			TotValue:           100000,
+			TotDiscDestination: 2500,
+			TotDiscAgent:       2600,
+			TotPrice:           94100,
+		}
+
+		price = append(price, tmpPrice)
+	}
+
+	return &price, "01", "Success get price", true
 }
