@@ -103,6 +103,7 @@ func GetPrice(token *entities.Users, r *entities.GetPriceReq) (*[]entities.GetPr
 			TrfName:            tarif.Trf_name,
 			TrfCode:            tarif.Trf_code,
 			TrfValue:           tarif.Trf_value,
+			Currency:           tarif.Trf_currency_code,
 			Qty:                trf.Qty,
 			DiscDStatus:        dDStatus,
 			DiscDPercent:       dD.Discm_value,

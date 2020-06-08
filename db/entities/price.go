@@ -17,6 +17,7 @@ type GetPriceRes struct {
 	TrfName            string  `json:"trf_name"`
 	TrfCode            string  `json:"trf_code"`
 	TrfValue           float32 `json:"trf_value"`
+	Currency           string  `json:"currency"`
 	Qty                int     `json:"qty"`
 	DiscDStatus        bool    `json:"disc_destination_status"`
 	DiscDPercent       float32 `json:"disc_destination_percent"`

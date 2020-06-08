@@ -48,10 +48,11 @@ func (GrupModel) TableName() string {
 }
 
 type TariffModel struct {
-	Trf_id    int
-	Trf_name  string
-	Trf_code  string
-	Trf_value float32
+	Trf_id            int
+	Trf_name          string
+	Trf_code          string
+	Trf_value         float32
+	Trf_currency_code string
 }
 
 func (TariffModel) TableName() string {
