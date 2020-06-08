@@ -93,7 +93,7 @@ func GetPrice(token *entities.Users, r *entities.GetPriceReq) (*[]entities.GetPr
 		}
 
 		discDes := (dD.Discm_value / 100) * tarif.Trf_value
-		discAg := (dA.Discm_value / 100) * tarif.Trf_value
+		discAg := (dA.Discm_value / 100) * (tarif.Trf_value - discDes)
 		totDes := discDes * float32(trf.Qty)
 		totAg := discAg * float32(trf.Qty)
 		totVal := tarif.Trf_value * float32(trf.Qty)
