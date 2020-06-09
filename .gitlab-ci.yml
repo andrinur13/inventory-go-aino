@@ -1,0 +1,44 @@
+stages:
+  - preview_deploy
+
+variables:
+  OPENSHIFT_PROJECT: ticketinghouse
+
+before_script:
+  - oc login $OPENSHIFT_IP:$OPENSHIFT_PORT -u=$OPENSHIFT_USERNAME -p=$OPENSHIFT_PASSWORD -n=$OPENSHIFT_PROJECT --insecure-skip-tls-verify
+
+preview_deploy:
+  stage: preview_deploy
+  tags:
+    - devops
+  only:
+    - merge_requests
+  environment:
+    name: preview/$OPENSHIFT_PROJECT/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    url: http://$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME-$OPENSHIFT_PROJECT.dev.ainosi.com
+    on_stop: stop_preview_function
+  script: |
+    oc project $OPENSHIFT_PROJECT
+    oc get services $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME 2> /dev/null || oc new-app . --source-secret tntgitlab --name=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    oc start-build $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME --from-dir=. --follow --wait
+    oc get routes $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME 2> /dev/null || oc expose service $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+
+stop_preview_function:
+  stage: preview_deploy
+  tags:
+    - devops
+  only:
+    - merge_requests
+  when: manual
+  environment:
+    name: preview/$OPENSHIFT_PROJECT/$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    action: stop
+  script: |
+    oc project $OPENSHIFT_PROJECT
+    oc delete services -l app=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    oc delete pods -l app=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    oc delete replicationcontroller -l app=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    oc delete deploymentconfig -l app=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    oc delete buildconfig -l app=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    oc delete route -l app=$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
+    oc delete imagestream $CI_PROJECT_NAME-$CI_COMMIT_REF_NAME
