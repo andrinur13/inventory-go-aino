@@ -38,9 +38,11 @@ type Condition struct {
 }
 
 type GrupModel struct {
-	Group_id   int
-	Group_mid  string
-	Group_name string
+	Group_id    int
+	Group_mid   string
+	Group_name  string
+	Group_label string
+	Group_logo  string
 }
 
 func (GrupModel) TableName() string {

@@ -5,6 +5,8 @@ import (
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
+
+	"github.com/jinzhu/gorm"
 )
 
 var qrPrefix = "AINO"
@@ -115,4 +117,49 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 	}
 
 	return &mTickets, "01", "Success get ticket list", true
+}
+
+//SelectCluster : select data cluster
+func SelectCluster(token *entities.Users) (*[]entities.Cluster, string, string, bool) {
+
+	var cluster []entities.GrupModel
+
+	if err := db.DB[1].Where("depth = 2 AND deleted_at is NULL").Find(&cluster).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "02", "Cluster not found (" + err.Error() + ")", false
+	}
+
+	var resp []entities.Cluster
+
+	for _, data := range cluster {
+		var sites []entities.GrupModel
+
+		if err := db.DB[1].Where("depth = 3 AND parent_id = ? AND deleted_at is NULL", data.Group_id).Find(&sites).Error; err != nil {
+			return nil, "03", "Error when fetching site data (" + err.Error() + ")", false
+		}
+
+		var siteResp []entities.Site
+
+		for _, site := range sites {
+			tmpSite := entities.Site{
+				SiteID:   site.Group_id,
+				SiteMID:  site.Group_mid,
+				SiteName: site.Group_name,
+				SiteLogo: site.Group_logo,
+			}
+
+			siteResp = append(siteResp, tmpSite)
+		}
+
+		tmpResp := entities.Cluster{
+			ClusterID:   data.Group_id,
+			ClusterMID:  data.Group_mid,
+			ClusterName: data.Group_name,
+			ClusterLogo: data.Group_logo,
+			Site:        siteResp,
+		}
+
+		resp = append(resp, tmpResp)
+	}
+
+	return &resp, "01", "Success get cluster data", true
 }

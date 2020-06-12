@@ -29,6 +29,7 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 		ticket.POST("/booking", permission.Set("PERMISSION_MASTER_USER_SAVE", BookingTicket))
 		ticket.POST("/redeem", permission.Set("PERMISSION_MASTER_USER_SAVE", RedeemTicket))
 		ticket.POST("/checkout", permission.Set("PERMISSION_MASTER_USER_SAVE", CheckoutTicket))
+		ticket.GET("/cluster", permission.Set("PERMISSION_MASTER_USER_VIEW", GetCluster))
 		ticket.POST("/tes", permission.Set("PERMISSION_MASTER_USER_VIEW", Tes))
 	}
 	agent := r.Group("/register")
@@ -137,6 +138,26 @@ func CheckoutTicket(c *gin.Context) {
 	c.Header("Transfer-Encoding", "identity")
 	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
 	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
+// GetCluster : get data cluster
+func GetCluster(c *gin.Context) {
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	data, code, msg, stat := repositories.SelectCluster(userData)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), "")
 }
 
 // RegisterAgent : register agent
