@@ -19,16 +19,11 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 	var mTickets []entities.MasterTicket
 	var tickets []entities.Ticket
 
-	mbmid := r.(map[string]interface{})["mbmid"]
-
-	if mbmid == nil {
-		return nil, "99", "Mbmid are required", false
-	}
-
 	query := `SELECT 
 				COALESCE(cast(a.trf_id as varchar(255)), '') as trf_id,
 				COALESCE(a.trf_code, '') as trf_code,
 				COALESCE(cast(a.trf_group_id as varchar(255)), '') as trf_group_id,
+				COALESCE(d.group_name , '') as trf_group_name,
 				COALESCE(f.trfftype_name, '') as trf_trftype,
 				COALESCE(a.trf_name, '') as trf_name,
 				COALESCE(a.trf_value::text, '') as trf_value,
@@ -38,6 +33,7 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 				COALESCE(a.trf_release::text, '') as trf_release,
 				COALESCE(a.trf_currency_code, '') as trf_currency_code,
 				COALESCE(a.trf_qty, '1') as trf_qty,
+				a.trf_agent_id,
 				COALESCE(cast(trf_condition->>'day' as text), '') as day,
 				COALESCE(cast(trf_condition->>'beginTime' as text), '') as begin_time,
 				COALESCE(cast(trf_condition->>'endTime' as text), '') as end_time,
@@ -47,12 +43,18 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 				join public.master_group d on a.trf_group_id = d.group_id
 				left join public.master_tariff_type f on a.trf_trfftype_id = f.trfftype_id
 				left join public.master_tariff_has_machine i on a.trf_id = i.trf_id 
-				where (d.group_mid = ?)
-				and a.deleted_at is null
+				where a.deleted_at is null
 				and a.trf_agent_id = ?`
 
-	query += ` order by a.trf_id DESC;`
-	db.DB[0].Raw(query, mbmid, token.Typeid).Scan(&masterTicket)
+	mbmid := r.(map[string]interface{})["mbmid"]
+
+	if mbmid == nil || mbmid == "" {
+		query += ` order by a.trf_id DESC;`
+		db.DB[0].Raw(query, token.Typeid).Scan(&masterTicket)
+	} else {
+		query += ` and (d.group_mid = ?) order by a.trf_id DESC;`
+		db.DB[0].Raw(query, token.Typeid, mbmid).Scan(&masterTicket)
+	}
 
 	if len(masterTicket) == 0 {
 		return nil, "02", "Fare not found", false
@@ -103,6 +105,8 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 			Trf_release:       item.Trf_release,
 			Trf_currency_code: item.Trf_currency_code,
 			Trf_qty:           item.Trf_qty,
+			Trf_agent_id:      item.Trf_agent_id,
+			Trf_group_name:    item.Trf_group_name,
 			Ticket:            dataTicket,
 			Trf_condition: &entities.Condition{
 				Day:        dayArr,
