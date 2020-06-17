@@ -10,14 +10,6 @@
   version = "v1.2.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e31f0d0944e7a12d17a05c12e10948ba73ca6b0ff9e208d27d57ca598f223b0d"
-  name = "github.com/NaySoftware/go-fcm"
-  packages = ["."]
-  pruneopts = ""
-  revision = "808e978ddcd20641adbc07563258edcf3513c7ed"
-
-[[projects]]
   digest = "1:c0952fb3cf9506cff577b4edf4458889570dcbd2902a7b90a1fd96bfbb97ccd8"
   name = "github.com/PuerkitoBio/purell"
   packages = ["."]
@@ -53,14 +45,6 @@
   revision = "fb15b899a75114aa79cc930e33c46b577cc664b1"
 
 [[projects]]
-  digest = "1:5680f8c40e48f07cb77aece3165a866aaf8276305258b3b70db8ec7ad6ddb78d"
-  name = "github.com/armon/go-radix"
-  packages = ["."]
-  pruneopts = ""
-  revision = "1a2de0c21c94309923825da3df33a4381872c795"
-  version = "v1.0.0"
-
-[[projects]]
   branch = "master"
   digest = "1:6dfb0a0d2ffb4aed50b1101fab4a559cc690e85a6bb7bc865340d80571cbb908"
   name = "github.com/buger/jsonparser"
@@ -75,30 +59,6 @@
   pruneopts = ""
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
   version = "v3.2.0"
-
-[[projects]]
-  digest = "1:fbdca994eda199bdf49db46dffea194ce2665f6abb4e765adf2747cc322ae89a"
-  name = "github.com/elastic/go-sysinfo"
-  packages = [
-    ".",
-    "internal/registry",
-    "providers/darwin",
-    "providers/linux",
-    "providers/shared",
-    "providers/windows",
-    "types",
-  ]
-  pruneopts = ""
-  revision = "b719bc42e40963c707571af208683a049e61f07f"
-  version = "v1.3.0"
-
-[[projects]]
-  digest = "1:4a9fa6079a688f96e28c02a97b4ffb6664a275d7d70593f1ef11f707b112bd05"
-  name = "github.com/elastic/go-windows"
-  packages = ["."]
-  pruneopts = ""
-  revision = "8c929792e70203792e3baf128c380e28754ae8b5"
-  version = "v1.0.1"
 
 [[projects]]
   digest = "1:e35353e6b5c1a1350832f2f5ea87f1d42d491ce519bc6e2c65d5dd6d020e2a01"
@@ -208,14 +168,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:521a4970efd87aee222f294b7f0c281266fd4325a3e5c31bda725dff082d120a"
-  name = "github.com/joeshaw/multierror"
-  packages = ["."]
-  pruneopts = ""
-  revision = "69b34d4ec901851247ae7e77d33909caf9df99ed"
-
-[[projects]]
   digest = "1:fb8bce9822eac1e2aeee6c2621cf25c6dec8f8f5f50a09a4a894d7932bfb2106"
   name = "github.com/json-iterator/go"
   packages = ["."]
@@ -297,34 +249,6 @@
   version = "v2.1.0"
 
 [[projects]]
-  digest = "1:c45802472e0c06928cd997661f2af610accd85217023b1d5f6331bebce0671d3"
-  name = "github.com/pkg/errors"
-  packages = ["."]
-  pruneopts = ""
-  revision = "614d223910a179a466c1767a985424175c39b465"
-  version = "v0.9.1"
-
-[[projects]]
-  digest = "1:b51b5230be333a0b4d3133144f5d3a432e2355b34f2faad1ba16916faa8fe939"
-  name = "github.com/prometheus/procfs"
-  packages = [
-    ".",
-    "internal/fs",
-    "internal/util",
-  ]
-  pruneopts = ""
-  revision = "4850c197847aa06aecc37570077fc16e9215d565"
-  version = "v0.0.10"
-
-[[projects]]
-  digest = "1:eeee5160368857cf1dcc2264bc71da5dfd2643183ce0265a7248d8ed2f29805a"
-  name = "github.com/santhosh-tekuri/jsonschema"
-  packages = ["."]
-  pruneopts = ""
-  revision = "137f44a49015e5060a447c331aa37de6e0f50267"
-  version = "v2.2.0"
-
-[[projects]]
   digest = "1:7f569d906bdd20d906b606415b7d794f798f91a62fcfb6a4daa6d50690fb7a3f"
   name = "github.com/satori/go.uuid"
   packages = ["."]
@@ -368,42 +292,6 @@
   version = "v1.1.7"
 
 [[projects]]
-  digest = "1:2bf20a231aabb498c570a466f63a22920d46e526e4f85550487b4e440073667c"
-  name = "go.elastic.co/apm"
-  packages = [
-    ".",
-    "apmconfig",
-    "internal/apmcontext",
-    "internal/apmhostutil",
-    "internal/apmhttputil",
-    "internal/apmlog",
-    "internal/apmschema",
-    "internal/apmstrings",
-    "internal/apmversion",
-    "internal/configutil",
-    "internal/iochan",
-    "internal/pkgerrorsutil",
-    "internal/ringbuffer",
-    "internal/wildcard",
-    "model",
-    "module/apmgin",
-    "module/apmhttp",
-    "stacktrace",
-    "transport",
-  ]
-  pruneopts = ""
-  revision = "a6196033368cf29da84614e733a203eadc99edea"
-  version = "v1.7.1"
-
-[[projects]]
-  digest = "1:e05c654acb77a3d7c00aecaf64fdb66310f5f063f896a0d749be8a8d1fb168df"
-  name = "go.elastic.co/fastjson"
-  packages = ["."]
-  pruneopts = ""
-  revision = "676cec79bd027a8a4618de0991f27cfe632978f1"
-  version = "v1.0.0"
-
-[[projects]]
   branch = "master"
   digest = "1:0cb9af7d99926126ac7414b3d3e7e42b96d4b03ebba66972ac984e94c47e606e"
   name = "golang.org/x/crypto"
@@ -431,11 +319,7 @@
   branch = "master"
   digest = "1:d7d983fd8850aa2312ec3e963aa2710cc1adef5ded6dfdf7d4d8130c216a9430"
   name = "golang.org/x/sys"
-  packages = [
-    "unix",
-    "windows",
-    "windows/registry",
-  ]
+  packages = ["unix"]
   pruneopts = ""
   revision = "5c8b2ff67527cb88b770f693cebf3799036d8bc0"
 
@@ -518,19 +402,10 @@
   revision = "53403b58ad1b561927d19068c655246f2db79d48"
   version = "v2.2.8"
 
-[[projects]]
-  branch = "master"
-  digest = "1:bcbcbfa43e364aef4a092ac5865071660576fc2a1c46a291de4a494227ef26b7"
-  name = "howett.net/plist"
-  packages = ["."]
-  pruneopts = ""
-  revision = "77e249a2e2ba6362794925035a31bea61b902a1e"
-
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/NaySoftware/go-fcm",
     "github.com/Zurin/logrus",
     "github.com/alecthomas/template",
     "github.com/buger/jsonparser",
@@ -544,7 +419,6 @@
     "github.com/swaggo/gin-swagger",
     "github.com/swaggo/gin-swagger/swaggerFiles",
     "github.com/swaggo/swag",
-    "go.elastic.co/apm/module/apmgin",
     "golang.org/x/crypto/bcrypt",
     "gopkg.in/gomail.v2",
     "gopkg.in/olahol/melody.v1",
