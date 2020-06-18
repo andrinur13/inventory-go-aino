@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"math"
 	"strings"
 	"time"
 	"twc-ota-api/db"
@@ -166,4 +167,69 @@ func SelectCluster(token *entities.Users) (*[]entities.Cluster, string, string, 
 	}
 
 	return &resp, "01", "Success get cluster data", true
+}
+
+//SelectTrip : select data trip
+func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList, string, string, bool, int, int, int) {
+
+	var trip []entities.TripTrxModel
+	var counTrip []entities.TripModel
+
+	offset := (page - 1) * size
+	limit := size
+
+	if err := db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?", token.Typeid).Find(&counTrip).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
+	}
+
+	if err := db.DB[0].Select(`tp_status, tp_invoice, tp_number, tp_start_date, tp_end_date, tp_duration, tp_total_amount,
+								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
+								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
+								COALESCE(cast(tp_contact ->>'fullname' as text), '') as fullname,
+								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
+								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
+								COALESCE(cast(tp_contact ->>'address' as text), '') as address`).Where("tp_agent_id = ?", token.Typeid).Order("tp_invoice desc").Limit(limit).Offset(offset).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
+	}
+
+	var resp []entities.TrxList
+	var status string
+
+	for _, data := range trip {
+		if data.Tp_status == 1 {
+			status = "bucket"
+		} else if data.Tp_status == 2 {
+			status = "checkout"
+		} else if data.Tp_status == 3 {
+			status = "purchased"
+		} else {
+			status = "unknown"
+		}
+
+		tmpResp := entities.TrxList{
+			Tp_number:       data.Tp_number,
+			Tp_invoice:      data.Tp_invoice,
+			Tp_duration:     data.Tp_duration,
+			Tp_start_date:   data.Tp_start_date,
+			Tp_end_date:     data.Tp_end_date,
+			Tp_status:       status,
+			Tp_total_amount: data.Tp_total_amount,
+			Contact: &entities.TrxContact{
+				Email:    data.Email,
+				Address:  data.Address,
+				Fullname: data.Fullname,
+				Phone:    data.Phone,
+				Title:    data.Title,
+			},
+		}
+
+		resp = append(resp, tmpResp)
+	}
+
+	totalData := len(counTrip)
+	currentData := len(trip)
+	rawPages := float64(totalData) / float64(size)
+	totalPages := int(math.Ceil(rawPages))
+
+	return &resp, "01", "Success get trx data", true, totalData, totalPages, currentData
 }

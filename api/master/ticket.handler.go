@@ -36,6 +36,10 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 	{
 		agent.POST("/agent", permission.Set("PERMISSION_MASTER_USER_SAVE", RegisterAgent))
 	}
+	trx := r.Group("/trx")
+	{
+		trx.GET("list/:page/:size", permission.Set("PERMISSION_MASTER_USER_VIEW", GetTransaction))
+	}
 }
 
 // GetTicketList : Get ticket's fare data
@@ -183,6 +187,42 @@ func RegisterAgent(c *gin.Context) {
 	c.Header("Transfer-Encoding", "identity")
 	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
 	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
+// GetTransaction : Get transaction data
+func GetTransaction(c *gin.Context) {
+	page, err := strconv.Atoi(c.Param("page"))
+	if err != nil {
+		c.JSON(http.StatusOK, builder.ApiResponse(false, "General Error, couldn't parse page", "99", nil))
+		logger.Warning("General Error, couldn't parse page", "99", false, "")
+		return
+	}
+	size, err := strconv.Atoi(c.Param("size"))
+	if err != nil {
+		c.JSON(http.StatusOK, builder.ApiResponse(false, "General Error, couldn't parse size", "99", nil))
+		logger.Warning("General Error, couldn't parse size", "99", false, "")
+		return
+	}
+
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	data, code, msg, stat, totalData, currentData, totalPages := repositories.SelectTrip(userData, page, size)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	//test timeout client
+	// time.Sleep(3 * time.Second)
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	// c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	c.JSON(http.StatusOK, builder.ListResponse(stat, msg, code, totalData, currentData, totalPages, page, size, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), "")
 }
 
 //Tes : for testing purpose
