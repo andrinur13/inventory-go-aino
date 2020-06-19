@@ -5,15 +5,14 @@ type MasterTicket struct {
 	Trf_name          string     `json:"trf_name"`
 	Trf_code          string     `json:"trf_code"`
 	Trf_agent_id      int        `json:"trf_agent_id"`
-	Trf_group_id      int        `json:"trf_group_id"`
-	Trf_group_name    string     `json:"trf_group_name"`
 	Trf_trftype       string     `json:"trf_trftype"`
+	Trf_currency_code string     `json:"trf_currency_code"`
 	Trf_value         float32    `json:"trf_value"`
+	Trf_label         string     `json:"trf_label"`
 	Trf_start_date    string     `json:"trf_start_date"`
 	Trf_end_date      string     `json:"trf_end_date"`
 	Trf_priority      int        `json:"trf_priority"`
 	Trf_release       string     `json:"trf_release"`
-	Trf_currency_code string     `json:"trf_currency_code"`
 	Trf_qty           int        `json:"trf_qty"`
 	Day               string     `json:"-"`
 	Begin_time        string     `json:"-"`
@@ -40,11 +39,12 @@ type Condition struct {
 }
 
 type GrupModel struct {
-	Group_id    int
-	Group_mid   string
-	Group_name  string
-	Group_label string
-	Group_logo  string
+	Group_id       int
+	Group_mid      string
+	Group_name     string
+	Group_label    string
+	Group_logo     string
+	Group_estimate string
 }
 
 func (GrupModel) TableName() string {
@@ -83,4 +83,12 @@ type TariffDetModel struct {
 
 func (TariffDetModel) TableName() string {
 	return "master_tariffdet"
+}
+
+type CurrencyModel struct {
+	Curr_rate float32
+}
+
+func (CurrencyModel) TableName() string {
+	return "currency"
 }

@@ -15,8 +15,9 @@ type Cluster struct {
 }
 
 type Site struct {
-	SiteID   int    `json:"site_id"`
-	SiteMID  string `json:"site_mid"`
-	SiteName string `json:"site_name"`
-	SiteLogo string `json:"site_logo"`
+	SiteID        int    `json:"site_id"`
+	SiteMID       string `json:"site_mid"`
+	SiteName      string `json:"site_name"`
+	SiteEstimated string `json:"site_estimated"`
+	SiteLogo      string `json:"site_logo"`
 }

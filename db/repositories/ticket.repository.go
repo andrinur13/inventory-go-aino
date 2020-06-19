@@ -1,11 +1,13 @@
 package repositories
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
+	"twc-ota-api/utils/helper"
 
 	"github.com/jinzhu/gorm"
 )
@@ -15,7 +17,7 @@ var prefixLen = len(qrPrefix)
 var weekday = strings.ToUpper("%" + time.Now().Format("Mon") + "%")
 
 // GetTicket : get ticket list for device
-func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, string, string, bool) {
+func GetTicket(r interface{}, token *entities.Users) (map[string]interface{}, string, string, bool) {
 	var masterTicket []entities.MasterTicket
 	var mTickets []entities.MasterTicket
 	var tickets []entities.Ticket
@@ -61,6 +63,12 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 		return nil, "02", "Fare not found", false
 	}
 
+	var curr entities.CurrencyModel
+
+	if err := db.DB[1].Last(&curr).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "05", "Currency not found (" + err.Error() + ")", false
+	}
+
 	for _, item := range masterTicket {
 		var dataTicket []entities.Ticket
 		db.DB[0].Raw(`select COALESCE(c.mtick_name, '') as mtick_name,
@@ -93,13 +101,21 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 		// cardArr := strings.Split(item.Card_type, ",")
 		cardArr := item.Card_type
 
+		trfVal := item.Trf_value
+		trfLabel := "Rp. " + helper.RenderFloat("#.###,", float64(trfVal))
+
+		if item.Trf_currency_code == "USD" {
+			trfVal = curr.Curr_rate * item.Trf_value
+			trfLabel = "USD $" + fmt.Sprintf("%g", item.Trf_value) + " | " + "Rp. " + helper.RenderFloat("#.###,", float64(trfVal))
+		}
+
 		mTicket := entities.MasterTicket{
 			Trf_id:            item.Trf_id,
 			Trf_name:          item.Trf_name,
 			Trf_code:          item.Trf_code,
-			Trf_group_id:      item.Trf_group_id,
 			Trf_trftype:       item.Trf_trftype,
-			Trf_value:         item.Trf_value,
+			Trf_value:         trfVal,
+			Trf_label:         trfLabel,
 			Trf_start_date:    item.Trf_start_date,
 			Trf_end_date:      item.Trf_end_date,
 			Trf_priority:      item.Trf_priority,
@@ -107,7 +123,6 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 			Trf_currency_code: item.Trf_currency_code,
 			Trf_qty:           item.Trf_qty,
 			Trf_agent_id:      item.Trf_agent_id,
-			Trf_group_name:    item.Trf_group_name,
 			Ticket:            dataTicket,
 			Trf_condition: &entities.Condition{
 				Day:        dayArr,
@@ -121,7 +136,19 @@ func GetTicket(r interface{}, token *entities.Users) (*[]entities.MasterTicket, 
 		mTickets = append(mTickets, mTicket)
 	}
 
-	return &mTickets, "01", "Success get ticket list", true
+	var site entities.GrupModel
+
+	if err := db.DB[1].Where("group_mid = ?", mbmid).Find(&site).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "04", "Site not found (" + err.Error() + ")", false
+	}
+
+	return map[string]interface{}{
+		"site_id":     site.Group_id,
+		"mmid":        site.Group_mid,
+		"site_name":   site.Group_name,
+		"site_images": site.Group_logo,
+		"ticket_list": mTickets,
+	}, "01", "Success get ticket list", true
 }
 
 //SelectCluster : select data cluster
@@ -138,7 +165,7 @@ func SelectCluster(token *entities.Users) (*[]entities.Cluster, string, string, 
 	for _, data := range cluster {
 		var sites []entities.GrupModel
 
-		if err := db.DB[1].Where("depth = 3 AND parent_id = ? AND deleted_at is NULL", data.Group_id).Find(&sites).Error; err != nil {
+		if err := db.DB[1].Select("*, COALESCE(cast(group_extras ->>'estimate' as text), '') as group_estimate").Where("depth = 3 AND parent_id = ? AND deleted_at is NULL", data.Group_id).Find(&sites).Error; err != nil {
 			return nil, "03", "Error when fetching site data (" + err.Error() + ")", false
 		}
 
@@ -146,10 +173,11 @@ func SelectCluster(token *entities.Users) (*[]entities.Cluster, string, string, 
 
 		for _, site := range sites {
 			tmpSite := entities.Site{
-				SiteID:   site.Group_id,
-				SiteMID:  site.Group_mid,
-				SiteName: site.Group_name,
-				SiteLogo: site.Group_logo,
+				SiteID:        site.Group_id,
+				SiteMID:       site.Group_mid,
+				SiteName:      site.Group_name,
+				SiteLogo:      site.Group_logo,
+				SiteEstimated: site.Group_estimate,
 			}
 
 			siteResp = append(siteResp, tmpSite)
