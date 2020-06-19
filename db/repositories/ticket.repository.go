@@ -182,7 +182,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
 	}
 
-	if err := db.DB[0].Select(`tp_status, tp_invoice, tp_number, tp_start_date, tp_end_date, tp_duration, tp_total_amount,
+	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_start_date, tp_end_date, tp_duration, tp_total_amount,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
 								COALESCE(cast(tp_contact ->>'fullname' as text), '') as fullname,
@@ -206,6 +206,18 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			status = "unknown"
 		}
 
+		var grups []entities.TripGrupName
+
+		if err := db.DB[0].Select(`distinct group_name`).Where("tp_id = ?", data.Tp_id).Joins("inner join trip_planner_person on tp_id = tpp_tp_id").Joins("inner join trip_planner_destination on tpp_id = tpd_tpp_id").Joins("inner join master_group on group_mid = tpd_group_mid").Order("group_name").Find(&grups).Error; gorm.IsRecordNotFoundError(err) {
+			return nil, "03", "Data group not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+		dest := []string{}
+
+		for _, grup := range grups {
+			dest = append(dest, grup.Group_name)
+		}
+
 		tmpResp := entities.TrxList{
 			Tp_number:       data.Tp_number,
 			Tp_invoice:      data.Tp_invoice,
@@ -214,6 +226,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			Tp_end_date:     data.Tp_end_date,
 			Tp_status:       status,
 			Tp_total_amount: data.Tp_total_amount,
+			Destination:     dest,
 			Contact: &entities.TrxContact{
 				Email:    data.Email,
 				Address:  data.Address,

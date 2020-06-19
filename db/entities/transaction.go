@@ -1,6 +1,7 @@
 package entities
 
 type TripTrxModel struct {
+	Tp_id           string
 	Tp_number       string
 	Tp_start_date   string
 	Tp_end_date     string
@@ -19,6 +20,14 @@ func (TripTrxModel) TableName() string {
 	return "trip_planner"
 }
 
+type TripGrupName struct {
+	Group_name string
+}
+
+func (TripGrupName) TableName() string {
+	return "trip_planner"
+}
+
 type TrxList struct {
 	Tp_number       string      `json:"invoice_number"`
 	Tp_invoice      int         `json:"invoice_order"`
@@ -28,6 +37,7 @@ type TrxList struct {
 	Tp_status       string      `json:"status"`
 	Tp_total_amount float32     `json:"total_amount"`
 	Contact         *TrxContact `json:"contact"`
+	Destination     []string    `json:"destination"`
 }
 
 type TrxContact struct {
