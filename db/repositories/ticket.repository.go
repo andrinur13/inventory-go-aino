@@ -212,11 +212,14 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			return nil, "03", "Data group not found (" + err.Error() + ")", false, 0, 0, 0
 		}
 
-		dest := []string{}
+		var dest string
 
 		for _, grup := range grups {
-			dest = append(dest, grup.Group_name)
+			dest += grup.Group_name + ", "
 		}
+
+		r := []rune(dest)
+		dest = string(r[:len(r)-2])
 
 		tmpResp := entities.TrxList{
 			Tp_number:       data.Tp_number,

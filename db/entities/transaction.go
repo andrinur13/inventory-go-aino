@@ -37,7 +37,7 @@ type TrxList struct {
 	Tp_status       string      `json:"status"`
 	Tp_total_amount float32     `json:"total_amount"`
 	Contact         *TrxContact `json:"contact"`
-	Destination     []string    `json:"destination"`
+	Destination     string      `json:"destination"`
 }
 
 type TrxContact struct {
