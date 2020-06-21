@@ -1,18 +1,34 @@
 package entities
 
 type GetPriceReq struct {
-	Day     int        `json:"day"`
-	DestQty int        `json:"destination_qty"`
-	Dest    []string   `json:"destination"`
-	Trf     []TrfPrice `json:"tarif"`
+	DestQty int     `json:"destination_qty"`
+	Visit   []Visit `json:"visit"`
+}
+
+type Visit struct {
+	VisitDate string     `json:"visit_date"`
+	Trf       []TrfPrice `json:"tarif"`
 }
 
 type TrfPrice struct {
-	ID  int `json:"id"`
-	Qty int `json:"qty"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Qty  int    `json:"qty"`
 }
 
 type GetPriceRes struct {
+	Visit        []VisitRes `json:"visit"`
+	PriceTotal   float32    `json:"price_total"`
+	Discount     float32    `json:"discount"`
+	PaymentTotal float32    `json:"payment_total"`
+}
+
+type VisitRes struct {
+	VisitDate string        `json:"visit_date"`
+	Trf       []TrfPriceRes `json:"tarif"`
+}
+
+type TrfPriceRes struct {
 	TrfID              int     `json:"trf_id"`
 	TrfName            string  `json:"trf_name"`
 	TrfCode            string  `json:"trf_code"`
