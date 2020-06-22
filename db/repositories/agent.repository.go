@@ -87,6 +87,70 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 	return &dataAgent, "01", "Get data agent success", true
 }
 
+func UpdateProfileAgent(token *entities.Users, r *entities.AgentReq) (map[string]interface{}, string, string, bool) {
+	if r.Agent == "" {
+		return nil, "99", "Agent cant't be empty", false
+	}
+
+	if r.Address == "" {
+		return nil, "99", "Address cant't be empty", false
+	}
+
+	if r.Extras.AddrDetail == "" {
+		return nil, "99", "Addr detail cant't be empty", false
+	}
+
+	if r.Extras.NoID == "" {
+		return nil, "99", "No ID cant't be empty", false
+	}
+
+	if r.Extras.PicName == "" {
+		return nil, "99", "Pic name cant't be empty", false
+	}
+
+	if r.Extras.Telp == "" {
+		return nil, "99", "Telp number cant't be empty", false
+	}
+
+	if r.Extras.Email == "" {
+		return nil, "99", "E-mail cant't be empty", false
+	}
+
+	if r.Extras.Npwp == "" {
+		return nil, "99", "Npwp cant't be empty", false
+	}
+
+	rExt, err := json.Marshal(&r.Extras)
+	if err != nil {
+		return nil, "99", "Failed to parse json key contact (" + err.Error() + ")", false
+	}
+
+	jExt := string(rExt)
+
+	var agent entities.AgentModel
+
+	if r.Group != 0 {
+		agent = entities.AgentModel{
+			Agent_name:     r.Agent,
+			Agent_address:  r.Address,
+			Agent_group_id: r.Group,
+			Agent_extras:   jExt,
+		}
+	} else {
+		agent = entities.AgentModel{
+			Agent_name:    r.Agent,
+			Agent_address: r.Address,
+			Agent_extras:  jExt,
+		}
+	}
+
+	var checkAgent []entities.AgentModel
+
+	db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent)
+
+	return nil, "01", "Agent successfully updated", true
+}
+
 //InsertAgent : insert data user
 func InsertAgent(token *entities.Users, r *entities.AgentReq) (map[string]interface{}, string, string, bool) {
 	if r.Agent == "" {
