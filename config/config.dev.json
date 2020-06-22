@@ -5,7 +5,7 @@
   },
   "email": {
     "host":"smtp.gmail.com",
-    "port": 465,
+    "port": 587,
     "email": "zurinezekiel@gmail.com",
     "username": "zurinezekiel@gmail.com",
     "password": "immortalblood"
