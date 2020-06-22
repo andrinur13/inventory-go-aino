@@ -116,6 +116,10 @@ func UpdateProfileAgent(token *entities.Users, r *entities.AgentReq) (map[string
 		return nil, "99", "E-mail cant't be empty", false
 	}
 
+	if r.Extras.Npwp == "" {
+		return nil, "99", "Npwp cant't be empty", false
+	}
+
 	rExt, err := json.Marshal(&r.Extras)
 	if err != nil {
 		return nil, "99", "Failed to parse json key contact (" + err.Error() + ")", false
