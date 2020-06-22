@@ -18,6 +18,7 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
 								agent_extras ->> 'email' as email,
+								agent_extras ->> 'npwp' as npwp,
 								agent_extras ->> 'pic_name' as pic_name`).Where("deleted_at is null").Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "No agent data found (" + err.Error() + ")", false
 	}
@@ -31,6 +32,7 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 			PicName:    agent.Pic_name,
 			Telp:       agent.Telp,
 			Email:      agent.Email,
+			Npwp:      	agent.Npwp,
 		}
 
 		tmpAgent := entities.AgentModel{
@@ -55,6 +57,7 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
 								agent_extras ->> 'email' as email,
+								agent_extras ->> 'npwp' as npwp,
 								agent_extras ->> 'pic_name' as pic_name`).Where("agent_id = ? AND deleted_at is null", token.Typeid).Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "No agent data found (" + err.Error() + ")", false
 	}
@@ -68,6 +71,7 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 			PicName:    agent.Pic_name,
 			Telp:       agent.Telp,
 			Email:      agent.Email,
+			Npwp:				agent.Npwp,
 		}
 
 		tmpAgent := entities.AgentModel{
@@ -111,6 +115,10 @@ func InsertAgent(token *entities.Users, r *entities.AgentReq) (map[string]interf
 
 	if r.Extras.Email == "" {
 		return nil, "99", "E-mail cant't be empty", false
+	}
+
+	if r.Extras.Npwp == "" {
+		return nil, "99", "NPWP cant't be empty", false
 	}
 
 	var checkAgent []entities.AgentModel
