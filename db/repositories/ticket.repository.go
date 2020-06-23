@@ -172,7 +172,9 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
 	}
 
-	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_start_date, tp_end_date, tp_duration, tp_total_amount,
+	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
+								COALESCE(tp_start_date::text, '') as tp_start_date,
+								COALESCE(tp_end_date::text, '') as tp_end_date,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
 								COALESCE(cast(tp_contact ->>'fullname' as text), '') as fullname,

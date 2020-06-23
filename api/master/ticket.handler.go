@@ -209,7 +209,7 @@ func GetTransaction(c *gin.Context) {
 
 	userData := middleware.Decode(split[1])
 
-	data, code, msg, stat, totalData, currentData, totalPages := repositories.SelectTrip(userData, page, size)
+	data, code, msg, stat, totalData, totalPages, currentData := repositories.SelectTrip(userData, page, size)
 
 	out, _ := json.Marshal(data)
 
