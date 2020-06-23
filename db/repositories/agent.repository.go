@@ -13,13 +13,13 @@ import (
 func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 	var agents []entities.AgentModel
 
-	if err := db.DB[0].Select(`agent_id, agent_name, agent_address,
+	if err := db.DB[1].Select(`agent_id, agent_name, agent_address, group_agent_name,
 								agent_extras ->> 'agent_address_detail' as agent_address_detail,
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
 								agent_extras ->> 'email' as email,
 								agent_extras ->> 'npwp' as npwp,
-								agent_extras ->> 'pic_name' as pic_name`).Where("deleted_at is null").Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
+								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.deleted_at is null").Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "No agent data found (" + err.Error() + ")", false
 	}
 
@@ -39,6 +39,7 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 			Agent_id:      agent.Agent_id,
 			Agent_address: agent.Agent_address,
 			Agent_name:    agent.Agent_name,
+			Agent_group_id: 	agent.Agent_group_id,
 			AgentExtras:   &extras,
 		}
 
@@ -52,13 +53,13 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, string, bool) {
 	var agents []entities.AgentModel
 
-	if err := db.DB[0].Select(`agent_id, agent_name, agent_address, agent_group_id,
+	if err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
 								agent_extras ->> 'agent_address_detail' as agent_address_detail,
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
 								agent_extras ->> 'email' as email,
 								agent_extras ->> 'npwp' as npwp,
-								agent_extras ->> 'pic_name' as pic_name`).Where("agent_id = ? AND deleted_at is null", token.Typeid).Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
+								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "No agent data found (" + err.Error() + ")", false
 	}
 
@@ -75,11 +76,12 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 		}
 
 		tmpAgent := entities.AgentModel{
-			Agent_id:       agent.Agent_id,
-			Agent_address:  agent.Agent_address,
-			Agent_name:     agent.Agent_name,
-			Agent_group_id: agent.Agent_group_id,
-			AgentExtras:    &extras,
+			Agent_id:       	agent.Agent_id,
+			Group_agent_name: agent.Group_agent_name,
+			Agent_address:  	agent.Agent_address,
+			Agent_name:     	agent.Agent_name,
+			Agent_group_id: 	agent.Agent_group_id,
+			AgentExtras:    	&extras,
 		}
 
 		dataAgent = append(dataAgent, tmpAgent)
