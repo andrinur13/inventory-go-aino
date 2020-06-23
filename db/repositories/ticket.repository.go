@@ -99,16 +99,17 @@ func GetTicket(r interface{}, token *entities.Users) (map[string]interface{}, st
 
 	var site entities.GrupModel
 
-	if err := db.DB[1].Where("group_mid = ?", mbmid).Find(&site).Error; gorm.IsRecordNotFoundError(err) {
+	if err := db.DB[1].Select("*, COALESCE(cast(group_extras ->>'estimate' as text), '') as group_estimate").Where("group_mid = ?", mbmid).Find(&site).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "04", "Site not found (" + err.Error() + ")", false
 	}
 
 	return map[string]interface{}{
-		"site_id":     site.Group_id,
-		"mmid":        site.Group_mid,
-		"site_name":   site.Group_name,
-		"site_images": site.Group_logo,
-		"ticket_list": mTickets,
+		"site_id":       site.Group_id,
+		"mmid":          site.Group_mid,
+		"site_name":     site.Group_name,
+		"site_images":   site.Group_logo,
+		"site_duration": site.Group_estimate,
+		"ticket_list":   mTickets,
 	}, "01", "Success get ticket list", true
 }
 
