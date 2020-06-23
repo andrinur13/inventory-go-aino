@@ -52,7 +52,7 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, string, bool) {
 	var agents []entities.AgentModel
 
-	if err := db.DB[0].Select(`agent_id, agent_name, agent_address,
+	if err := db.DB[0].Select(`agent_id, agent_name, agent_address, agent_group_id,
 								agent_extras ->> 'agent_address_detail' as agent_address_detail,
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
@@ -75,10 +75,11 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 		}
 
 		tmpAgent := entities.AgentModel{
-			Agent_id:      agent.Agent_id,
-			Agent_address: agent.Agent_address,
-			Agent_name:    agent.Agent_name,
-			AgentExtras:   &extras,
+			Agent_id:       agent.Agent_id,
+			Agent_address:  agent.Agent_address,
+			Agent_name:     agent.Agent_name,
+			Agent_group_id: agent.Agent_group_id,
+			AgentExtras:    &extras,
 		}
 
 		dataAgent = append(dataAgent, tmpAgent)
