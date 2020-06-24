@@ -189,13 +189,13 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 
 	for _, data := range trip {
 		if data.Tp_status == 1 {
-			status = "bucket"
+			status = "Draft"
 		} else if data.Tp_status == 2 {
-			status = "checkout"
+			status = "Purchase"
 		} else if data.Tp_status == 3 {
-			status = "purchased"
+			status = "Paid"
 		} else {
-			status = "unknown"
+			status = "Unknown"
 		}
 
 		var grups []entities.TripGrupName
@@ -219,7 +219,9 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			Tp_duration:     data.Tp_duration,
 			Tp_start_date:   data.Tp_start_date,
 			Tp_end_date:     data.Tp_end_date,
-			Tp_status:       status,
+			Tp_status:       data.Tp_status,
+			Tp_id:           data.Tp_id,
+			Status_name:     status,
 			Tp_total_amount: data.Tp_total_amount,
 			Destination:     dest,
 			Contact: &entities.TrxContact{

@@ -29,12 +29,14 @@ func (TripGrupName) TableName() string {
 }
 
 type TrxList struct {
+	Tp_id           string      `json:"tp_id"`
 	Tp_number       string      `json:"invoice_number"`
 	Tp_invoice      int         `json:"invoice_order"`
 	Tp_start_date   string      `json:"start_date"`
 	Tp_end_date     string      `json:"end_date"`
 	Tp_duration     int         `json:"duration"`
-	Tp_status       string      `json:"status"`
+	Tp_status       int         `json:"tp_status"`
+	Status_name     string      `json:"status_name"`
 	Tp_total_amount float32     `json:"total_amount"`
 	Contact         *TrxContact `json:"contact"`
 	Destination     string      `json:"destination"`
