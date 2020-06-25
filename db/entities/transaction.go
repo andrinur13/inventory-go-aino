@@ -9,6 +9,7 @@ type TripTrxModel struct {
 	Tp_status       int
 	Tp_total_amount float32
 	Tp_invoice      int
+	Tp_agent_id     int
 	Email           string
 	Title           string
 	Fullname        string
@@ -39,6 +40,7 @@ type TrxList struct {
 	Status_name     string      `json:"status_name"`
 	Tp_total_amount float32     `json:"total_amount"`
 	Contact         *TrxContact `json:"contact"`
+	Tp_agent_id     int         `json:"agent_id"`
 	Destination     string      `json:"destination"`
 }
 

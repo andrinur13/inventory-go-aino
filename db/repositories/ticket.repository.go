@@ -173,7 +173,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 	}
 
 	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
-								COALESCE(tp_start_date::text, '') as tp_start_date,
+								COALESCE(tp_start_date::text, '') as tp_start_date, tp_agent_id,
 								COALESCE(tp_end_date::text, '') as tp_end_date,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
@@ -223,6 +223,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			Tp_id:           data.Tp_id,
 			Status_name:     status,
 			Tp_total_amount: data.Tp_total_amount,
+			Tp_agent_id:     data.Tp_agent_id,
 			Destination:     dest,
 			Contact: &entities.TrxContact{
 				Email:    data.Email,
