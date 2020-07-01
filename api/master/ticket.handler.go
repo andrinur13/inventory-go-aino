@@ -39,6 +39,7 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 	trx := r.Group("/trx")
 	{
 		trx.GET("list/:page/:size", permission.Set("PERMISSION_MASTER_USER_VIEW", GetTransaction))
+		trx.POST("/create", permission.Set("PERMISSION_MASTER_USER_SAVE", CreateTrx))
 	}
 }
 
@@ -225,17 +226,46 @@ func GetTransaction(c *gin.Context) {
 	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), "")
 }
 
+// CreateTrx : create new trx
+func CreateTrx(c *gin.Context) {
+	var param requests.TrxReq
+	c.BindJSON(&param)
+
+	in, _ := json.Marshal(param)
+
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	data, code, msg, stat := repositories.InsertTrx(userData, &param)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
 //Tes : for testing purpose
 func Tes(c *gin.Context) {
 	nano := time.Now().UnixNano()
 	unix := time.Now().Unix()
 	micro := nano / (int64(time.Millisecond) / int64(time.Nanosecond))
 
+	t, _ := time.Parse("2006-01-02", "2020-06-30")
+	dayExp := t.Add(time.Hour*time.Duration((2*24))).Format("2006-01-02") + " 23:59:59"
+
 	data := map[string]interface{}{
-		"second": unix,
-		"micro":  micro,
-		"nano":   nano,
-		"dummy":  "This is dummy data",
+		"day_exp": dayExp,
+		"second":  unix,
+		"micro":   micro,
+		"nano":    nano,
+		"dummy":   "This is dummy data",
 	}
 	c.JSON(http.StatusOK, builder.ApiResponse(true, "Success testing auth", "01", data))
 }

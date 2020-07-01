@@ -211,7 +211,10 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 		}
 
 		r := []rune(dest)
-		dest = string(r[:len(r)-2])
+
+		if len(r) > 2 {
+			dest = string(r[:len(r)-2])
+		}
 
 		tmpResp := entities.TrxList{
 			Tp_number:       data.Tp_number,
