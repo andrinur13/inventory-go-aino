@@ -1,5 +1,7 @@
 package entities
 
+import uuid "github.com/satori/go.uuid"
+
 type TripTrxModel struct {
 	Tp_id           string
 	Tp_number       string
@@ -50,4 +52,32 @@ type TrxContact struct {
 	Fullname string `json:"full_name"`
 	Phone    string `json:"phone"`
 	Address  string `json:"address"`
+}
+
+type TrpTrxModel struct {
+	Tp_id           uuid.UUID
+	Tp_stan         int
+	Tp_number       string
+	Tp_src_type     int
+	Tp_start_date   string
+	Tp_end_date     string
+	Tp_duration     int
+	Tp_status       int
+	Tp_user_id      int
+	Tp_contact      string
+	Tp_total_amount float32
+	Created_at      string
+	Tp_agent_id     int
+}
+
+func (TrpTrxModel) TableName() string {
+	return "trip_planner"
+}
+
+type GetExp struct {
+	Expired int
+}
+
+func (GetExp) TableName() string {
+	return "master_tariff"
 }

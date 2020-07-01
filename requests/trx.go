@@ -34,7 +34,7 @@ type ValidateMemberData struct {
 	DateValidate string `json:"date_validate"`
 }
 
-type TrxRes struct {
+type TrxReq struct {
 	SourceType int       `json:"source_type"`
 	StartDate  string    `json:"start_date"`
 	EndDate    string    `json:"end_date"`
@@ -44,9 +44,10 @@ type TrxRes struct {
 }
 
 type TrxTrip struct {
-	TripDate string    `json:"trip_date"`
-	TripDay  int       `json:"trip_day"`
-	Ticket   []TrxTick `json:"ticket"`
+	TripDate    string    `json:"trip_date"`
+	TripDay     int       `json:"trip_day"`
+	TotalAmount float32   `json:"total_amount"`
+	Ticket      []TrxTick `json:"ticket"`
 }
 
 type TrxCust struct {
@@ -63,9 +64,10 @@ type TrxCust struct {
 }
 
 type TrxTick struct {
-	Mmid         string `json:"mmid"`
-	SiteDuration string `json:"site_duration"`
-	TrfID        int    `json:"trf_id"`
-	TrfName      string `json:"trf_name"`
-	TrfQty       int    `json:"trf_qty"`
+	Mmid         string  `json:"mmid"`
+	SiteDuration int     `json:"site_duration"`
+	TrfID        int     `json:"trf_id"`
+	TrfName      string  `json:"trf_name"`
+	TrfQty       int     `json:"trf_qty"`
+	Amount       float32 `json:"amount"`
 }

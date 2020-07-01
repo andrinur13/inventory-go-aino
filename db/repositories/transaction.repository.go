@@ -1,0 +1,158 @@
+package repositories
+
+import (
+	"strconv"
+	"time"
+	"twc-ota-api/db"
+	"twc-ota-api/db/entities"
+	"twc-ota-api/requests"
+	"twc-ota-api/utils/helper"
+
+	uuid "github.com/satori/go.uuid"
+)
+
+// InsertTrx : insert to table trx
+func InsertTrx(token *entities.Users, r *requests.TrxReq) (map[string]interface{}, string, string, bool) {
+	if len(r.Trip) == 0 {
+		return nil, "99", "Trip is required", false
+	}
+
+	if len(r.Customer) == 0 {
+		return nil, "99", "Customer is required", false
+	}
+
+	if r.DestQty == 0 {
+		return nil, "99", "Destination qty is required", false
+	}
+
+	if r.SourceType == 0 {
+		return nil, "99", "Source type is required", false
+	}
+
+	if r.StartDate == "" {
+		return nil, "99", "Start date is required", false
+	}
+
+	if r.EndDate == "" {
+		return nil, "99", "End date is required", false
+	}
+
+	var res []entities.TrpTrxModel
+
+	for _, trip := range r.Trip {
+		tpID := uuid.NewV4()
+		stan := int(time.Now().Unix())
+		tripPlanner := entities.TrpTrxModel{
+			Tp_id:           tpID,
+			Tp_contact:      "{}",
+			Tp_duration:     helper.DaysBetween(helper.Date(r.StartDate), helper.Date(r.EndDate)),
+			Tp_start_date:   r.StartDate,
+			Tp_end_date:     r.EndDate,
+			Tp_number:       "WB2B." + string(time.Now().Format("020106")) + "." + strconv.Itoa(stan),
+			Tp_src_type:     r.SourceType,
+			Tp_stan:         stan,
+			Tp_status:       1,
+			Tp_total_amount: trip.TotalAmount,
+			Tp_user_id:      token.ID,
+			Tp_agent_id:     token.Typeid,
+			Created_at:      time.Now().Format("2006-01-02 15:04:05"),
+		}
+
+		db.DB[0].NewRecord(tripPlanner)
+
+		if err := db.DB[0].Create(&tripPlanner).Error; err != nil {
+			return nil, "02", "Error when inserting trip planner data (" + err.Error() + ")", false
+		}
+
+		res = append(res, tripPlanner)
+
+		for _, cust := range r.Customer {
+			if cust.IsPic == true {
+				var trp entities.TrpTrxModel
+
+				// db.DB[0].Where("tp_id = ?", tpID).Find(&trp)
+				// trp.Tp_contact = `{"nationality":"` + cust.Nationality + `", "region":"` + cust.Region +
+				// 	`", "idtype":"` + cust.IDType + `", "idnumber":"` + cust.IDNumber +
+				// 	`", "idname":"` + cust.Name + `", "type":"` + cust.Type +
+				// 	`", "title":"` + cust.Title + `", "email":"` + cust.Email +
+				// 	`", "phone":"` + cust.Phone + `", "pic":` + strconv.FormatBool(cust.IsPic) + `}`
+				// if err := db.DB[0].Save(&trp).Error; err != nil {
+				// 	return nil, "03", "Error when updating trip data (" + err.Error() + ")", false
+				// }
+				if err := db.DB[0].Model(&trp).Where("tp_id = ?", tpID).Update("tp_contact", `{"nationality":"`+cust.Nationality+`", "region":"`+cust.Region+
+					`", "idtype":"`+cust.IDType+`", "idnumber":"`+cust.IDNumber+
+					`", "idname":"`+cust.Name+`", "type":"`+cust.Type+
+					`", "title":"`+cust.Title+`", "email":"`+cust.Email+
+					`", "phone":"`+cust.Phone+`", "pic":`+strconv.FormatBool(cust.IsPic)+`}`).Error; err != nil {
+					return nil, "03", "Error when updating trip data (" + err.Error() + ")", false
+				}
+			}
+			tppID := uuid.NewV4()
+			qrCode := tppID.String() + `#` + strconv.Itoa(stan)
+			var custType int
+
+			if cust.Type == "adult" {
+				custType = 1
+			} else {
+				custType = 2
+			}
+
+			tripPerson := entities.PersonModel{
+				Tpp_id:    tppID,
+				Tpp_tp_id: tpID,
+				Tpp_name:  cust.Name,
+				Tpp_type:  custType,
+				Tpp_qr:    qrCode,
+				Tpp_extras: `{"nationality":"` + cust.Nationality + `", "region":"` + cust.Region +
+					`", "idtype":"` + cust.IDType + `", "idnumber":"` + cust.IDNumber +
+					`", "idname":"` + cust.Name + `", "type":"` + cust.Type +
+					`", "title":"` + cust.Title + `", "email":"` + cust.Email +
+					`", "phone":"` + cust.Phone + `", "pic":` + strconv.FormatBool(cust.IsPic) + `}`,
+				Created_at: time.Now().Format("2006-01-02 15:04:05"),
+			}
+
+			db.DB[0].NewRecord(tripPerson)
+
+			if err := db.DB[0].Create(&tripPerson).Error; err != nil {
+				return nil, "03", "Error when inserting trip planner person data (" + err.Error() + ")", false
+			}
+
+			for _, dest := range trip.Ticket {
+				var getExp entities.GetExp
+
+				if err := db.DB[0].Select(`cast(trf_condition ->> 'expiredQr' as int) as expired`).Where("trf_id = ?", dest.TrfID).Find(&getExp).Error; err != nil {
+					return nil, "04", "Couldn't find tariff with id: " + strconv.Itoa(dest.TrfID) + " (" + err.Error() + ")", false
+				}
+
+				t, _ := time.Parse("2006-01-02", trip.TripDate)
+
+				dayExp := t.Add(time.Hour*time.Duration((getExp.Expired*24)-24)).Format("2006-01-02") + " 23:59:59"
+
+				tpdID := uuid.NewV4()
+				tripDes := entities.DestinationModel{
+					Tpd_id:        tpdID,
+					Tpd_tpp_id:    tppID,
+					Tpd_amount:    dest.Amount,
+					Tpd_date:      trip.TripDate,
+					Tpd_day:       trip.TripDay,
+					Tpd_duration:  dest.SiteDuration,
+					Tpd_exp_date:  dayExp,
+					Tpd_group_mid: dest.Mmid,
+					Tpd_trf_id:    dest.TrfID,
+					Tpd_extras:    `{}`,
+					Created_at:    time.Now().Format("2006-01-02 15:04:05"),
+				}
+
+				db.DB[0].NewRecord(tripDes)
+
+				if err := db.DB[0].Create(&tripDes).Error; err != nil {
+					return nil, "03", "Error when inserting trip planner destination data (" + err.Error() + ")", false
+				}
+			}
+		}
+	}
+
+	return map[string]interface{}{
+		"resp": res,
+	}, "01", "Transaction success", true
+}
