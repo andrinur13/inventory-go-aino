@@ -12,7 +12,7 @@ import (
 )
 
 // InsertTrx : insert to table trx
-func InsertTrx(token *entities.Users, r *requests.TrxReq) (map[string]interface{}, string, string, bool) {
+func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, string, string, bool) {
 	if len(r.Trip) == 0 {
 		return nil, "99", "Trip is required", false
 	}
@@ -37,18 +37,22 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (map[string]interface{
 		return nil, "99", "End date is required", false
 	}
 
-	var res []entities.TrpTrxModel
+	var vis []requests.TrxVisit
+	var totPay float32
+	var name, phone, email string
 
 	for _, trip := range r.Trip {
+		totPay += trip.TotalAmount
 		tpID := uuid.NewV4()
 		stan := int(time.Now().Unix())
+		bNumber := "WB2B." + string(time.Now().Format("020106")) + "." + strconv.Itoa(stan)
 		tripPlanner := entities.TrpTrxModel{
 			Tp_id:           tpID,
 			Tp_contact:      "{}",
 			Tp_duration:     helper.DaysBetween(helper.Date(r.StartDate), helper.Date(r.EndDate)),
 			Tp_start_date:   r.StartDate,
 			Tp_end_date:     r.EndDate,
-			Tp_number:       "WB2B." + string(time.Now().Format("020106")) + "." + strconv.Itoa(stan),
+			Tp_number:       bNumber,
 			Tp_src_type:     r.SourceType,
 			Tp_stan:         stan,
 			Tp_status:       1,
@@ -63,8 +67,6 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (map[string]interface{
 		if err := db.DB[0].Create(&tripPlanner).Error; err != nil {
 			return nil, "02", "Error when inserting trip planner data (" + err.Error() + ")", false
 		}
-
-		res = append(res, tripPlanner)
 
 		for _, cust := range r.Customer {
 			if cust.IsPic == true {
@@ -86,6 +88,10 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (map[string]interface{
 					`", "phone":"`+cust.Phone+`", "pic":`+strconv.FormatBool(cust.IsPic)+`}`).Error; err != nil {
 					return nil, "03", "Error when updating trip data (" + err.Error() + ")", false
 				}
+
+				name = cust.Name
+				phone = cust.Phone
+				email = cust.Email
 			}
 			tppID := uuid.NewV4()
 			qrCode := tppID.String() + `#` + strconv.Itoa(stan)
@@ -149,10 +155,28 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (map[string]interface{
 					return nil, "03", "Error when inserting trip planner destination data (" + err.Error() + ")", false
 				}
 			}
+
 		}
+
+		tmpVisit := requests.TrxVisit{
+			BookingNumber: bNumber,
+			TotalAmount:   trip.TotalAmount,
+			TripDate:      trip.TripDate,
+			TripDay:       trip.TripDay,
+			Ticket:        trip.Ticket,
+		}
+
+		vis = append(vis, tmpVisit)
 	}
 
-	return map[string]interface{}{
-		"resp": res,
-	}, "01", "Transaction success", true
+	res := requests.TrxResp{
+		PayTotal: totPay,
+		Name:     name,
+		Email:    email,
+		Phone:    phone,
+		Cust:     r.Customer,
+		Visit:    vis,
+	}
+
+	return &res, "01", "Transaction success", true
 }

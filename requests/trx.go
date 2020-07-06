@@ -71,3 +71,20 @@ type TrxTick struct {
 	TrfQty       int     `json:"trf_qty"`
 	Amount       float32 `json:"amount"`
 }
+
+type TrxResp struct {
+	PayTotal float32    `json:"payment_total"`
+	Visit    []TrxVisit `json:"visit"`
+	Name     string     `json:"cp_name"`
+	Phone    string     `json:"phone"`
+	Email    string     `json:"email"`
+	Cust     []TrxCust  `json:"customer"`
+}
+
+type TrxVisit struct {
+	BookingNumber string    `json:"booking_number"`
+	TripDate      string    `json:"booking_date"`
+	TripDay       int       `json:"trip_day"`
+	TotalAmount   float32   `json:"total_amount"`
+	Ticket        []TrxTick `json:"ticket"`
+}
