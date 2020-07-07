@@ -43,6 +43,16 @@ type TrxReq struct {
 	Customer   []TrxCust `json:"customer"`
 }
 
+type TrxReqUpdate struct {
+	Status int      `json:"status"`
+	Trx    []TrxInv `json:"transaction"`
+}
+
+type TrxInv struct {
+	BookingNumber string `json:"booking_number"`
+	PaymentMethod string `json:"payment_method"`
+}
+
 type TrxTrip struct {
 	TripDate    string    `json:"trip_date"`
 	TripDay     int       `json:"trip_day"`

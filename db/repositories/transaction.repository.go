@@ -180,3 +180,66 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 
 	return &res, "01", "Transaction success", true
 }
+
+// UpdateTrx : update table trx
+func UpdateTrx(token *entities.Users, r *requests.TrxReqUpdate) (*[]entities.UpdateTrxResp, string, string, bool) {
+	if len(r.Trx) == 0 {
+		return nil, "99", "Trip is required", false
+	}
+
+	if r.Status == 0 {
+		return nil, "99", "Status is required", false
+	}
+
+	var resp []entities.UpdateTrxResp
+
+	for _, trx := range r.Trx {
+		update, msg := updateTableTrx(trx.BookingNumber, r.Status, trx.PaymentMethod)
+		if update == false {
+			return nil, "02", "Failed to update data (" + msg + ")", false
+		}
+
+		var trp entities.TrpTrxModel
+
+		if err := db.DB[0].Select(`tp_status, tp_number`).Where("tp_number = ?", trx.BookingNumber).Find(&trp).Error; err != nil {
+			return nil, "03", "Couldn't find invoice with number: " + trx.BookingNumber + " (" + err.Error() + ")", false
+		}
+
+		var status string
+
+		if trp.Tp_status == 1 {
+			status = "Draft"
+		} else if trp.Tp_status == 2 {
+			status = "Purchase"
+		} else if trp.Tp_status == 3 {
+			status = "Paid"
+		} else {
+			status = "Unknown"
+		}
+
+		tmpResp := entities.UpdateTrxResp{
+			InvNumber: trp.Tp_number,
+			Status:    status,
+		}
+
+		resp = append(resp, tmpResp)
+	}
+
+	return &resp, "01", "Transaction updated successfully", true
+}
+
+func updateTableTrx(inv string, status int, paymentMethod string) (bool, string) {
+	var trp entities.TrpTrxModel
+
+	if paymentMethod == "" {
+		if err := db.DB[0].Model(&trp).Where("tp_number = ?", inv).Updates(map[string]interface{}{"tp_status": status, "updated_at": time.Now().Format("2006-01-02 15:04:05")}).Error; err != nil {
+			return false, err.Error()
+		}
+	} else {
+		if err := db.DB[0].Model(&trp).Where("tp_number = ?", inv).Updates(map[string]interface{}{"tp_status": status, "tp_payment_method": paymentMethod, "updated_at": time.Now().Format("2006-01-02 15:04:05")}).Error; err != nil {
+			return false, err.Error()
+		}
+	}
+
+	return true, ""
+}
