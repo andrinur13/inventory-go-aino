@@ -49,7 +49,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		tripPlanner := entities.TrpTrxModel{
 			Tp_id:           tpID,
 			Tp_contact:      "{}",
-			Tp_duration:     helper.DaysBetween(helper.Date(r.StartDate), helper.Date(r.EndDate)),
+			Tp_duration:     (helper.DaysBetween(helper.Date(r.StartDate), helper.Date(r.EndDate))) + 1,
 			Tp_start_date:   r.StartDate,
 			Tp_end_date:     r.EndDate,
 			Tp_number:       bNumber,
