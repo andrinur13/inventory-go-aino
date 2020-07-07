@@ -55,19 +55,21 @@ type TrxContact struct {
 }
 
 type TrpTrxModel struct {
-	Tp_id           uuid.UUID
-	Tp_stan         int
-	Tp_number       string
-	Tp_src_type     int
-	Tp_start_date   string
-	Tp_end_date     string
-	Tp_duration     int
-	Tp_status       int
-	Tp_user_id      int
-	Tp_contact      string
-	Tp_total_amount float32
-	Created_at      string
-	Tp_agent_id     int
+	Tp_id             uuid.UUID
+	Tp_stan           int
+	Tp_number         string
+	Tp_src_type       int
+	Tp_start_date     string
+	Tp_end_date       string
+	Tp_duration       int
+	Tp_status         int
+	Tp_user_id        int
+	Tp_contact        string
+	Tp_total_amount   float32
+	Created_at        string
+	Tp_agent_id       int
+	Tp_payment_method string `gorm:"null"`
+	Updated_at        string `gorm:"null"`
 }
 
 func (TrpTrxModel) TableName() string {
@@ -80,4 +82,9 @@ type GetExp struct {
 
 func (GetExp) TableName() string {
 	return "master_tariff"
+}
+
+type UpdateTrxResp struct {
+	InvNumber string `json:"booking_number"`
+	Status    string `json:"status"`
 }
