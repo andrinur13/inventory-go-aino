@@ -68,8 +68,8 @@ type TrpTrxModel struct {
 	Tp_total_amount   float32
 	Created_at        string
 	Tp_agent_id       int
-	Tp_payment_method string `gorm:"null"`
-	Updated_at        string `gorm:"null"`
+	Tp_payment_method string `gorm:"DEFAULT:null"`
+	Updated_at        string `gorm:"DEFAULT:null"`
 }
 
 func (TrpTrxModel) TableName() string {
