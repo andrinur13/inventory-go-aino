@@ -82,7 +82,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 				// 	return nil, "03", "Error when updating trip data (" + err.Error() + ")", false
 				// }
 				if err := db.DB[0].Model(&trp).Where("tp_id = ?", tpID).Update("tp_contact", `{"nationality":"`+cust.Nationality+`", "region":"`+cust.Region+
-					`", "idtype":"`+cust.IDType+`", "idnumber":"`+cust.IDNumber+
+					`", "typeid":"`+cust.IDType+`", "id":"`+cust.IDNumber+
 					`", "idname":"`+cust.Name+`", "type":"`+cust.Type+
 					`", "title":"`+cust.Title+`", "email":"`+cust.Email+
 					`", "phone":"`+cust.Phone+`", "pic":`+strconv.FormatBool(cust.IsPic)+`}`).Error; err != nil {
@@ -110,7 +110,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 				Tpp_type:  custType,
 				Tpp_qr:    qrCode,
 				Tpp_extras: `{"nationality":"` + cust.Nationality + `", "region":"` + cust.Region +
-					`", "idtype":"` + cust.IDType + `", "idnumber":"` + cust.IDNumber +
+					`", "typeid":"` + cust.IDType + `", "id":"` + cust.IDNumber +
 					`", "idname":"` + cust.Name + `", "type":"` + cust.Type +
 					`", "title":"` + cust.Title + `", "email":"` + cust.Email +
 					`", "phone":"` + cust.Phone + `", "pic":` + strconv.FormatBool(cust.IsPic) + `}`,
