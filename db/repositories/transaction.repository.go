@@ -228,6 +228,49 @@ func UpdateTrx(token *entities.Users, r *requests.TrxReqUpdate) (*[]entities.Upd
 	return &resp, "01", "Transaction updated successfully", true
 }
 
+// UpdateTrxPayment : update table trx
+func UpdateTrxPayment(token *entities.Users, r *requests.TrxReqUpdate) (*[]entities.UpdateTrxResp, string, string, bool) {
+	if len(r.Trx) == 0 {
+		return nil, "99", "Transactions is required", false
+	}
+
+	var resp []entities.UpdateTrxResp
+
+	for _, trx := range r.Trx {
+		update, msg := updateTableTrx(trx.BookingNumber, 3, trx.PaymentMethod)
+		if update == false {
+			return nil, "02", "Failed to update data (" + msg + ")", false
+		}
+
+		var trp entities.TrpTrxModel
+
+		if err := db.DB[0].Select(`tp_status, tp_number`).Where("tp_number = ?", trx.BookingNumber).Find(&trp).Error; err != nil {
+			return nil, "03", "Couldn't find invoice with number: " + trx.BookingNumber + " (" + err.Error() + ")", false
+		}
+
+		var status string
+
+		if trp.Tp_status == 1 {
+			status = "Draft"
+		} else if trp.Tp_status == 2 {
+			status = "Purchase"
+		} else if trp.Tp_status == 3 {
+			status = "Paid"
+		} else {
+			status = "Unknown"
+		}
+
+		tmpResp := entities.UpdateTrxResp{
+			InvNumber: trp.Tp_number,
+			Status:    status,
+		}
+
+		resp = append(resp, tmpResp)
+	}
+
+	return &resp, "01", "Payment succeed", true
+}
+
 func updateTableTrx(inv string, status int, paymentMethod string) (bool, string) {
 	var trp entities.TrpTrxModel
 
