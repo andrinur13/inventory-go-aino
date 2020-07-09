@@ -173,6 +173,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 	}
 
 	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
+								agent_name,
 								COALESCE(tp_start_date::text, '') as tp_start_date, tp_agent_id,
 								COALESCE(tp_end_date::text, '') as tp_end_date,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
@@ -180,7 +181,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 								COALESCE(cast(tp_contact ->>'fullname' as text), '') as fullname,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
-								COALESCE(cast(tp_contact ->>'address' as text), '') as address`).Where("tp_agent_id = ?", token.Typeid).Order("tp_invoice desc").Limit(limit).Offset(offset).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
+								COALESCE(cast(tp_contact ->>'address' as text), '') as address`).Where("tp_agent_id = ?", token.Typeid).Joins("inner join master_agents on agent_id = tp_agent_id").Order("tp_invoice desc").Limit(limit).Offset(offset).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
 	}
 
@@ -198,10 +199,51 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			status = "Unknown"
 		}
 
+		var persons []entities.TripPersonTrxModel
+
+		if err := db.DB[0].Select(`tpp_id, tpp_name,
+					CASE 
+						WHEN tpp_type = 1 THEN 'adult'
+						WHEN tpp_type = 2 THEN 'child'
+						else 'unknown'
+					end as "type",
+					tpp_qr,
+					COALESCE(cast(tpp_extras ->>'id' as text), '') as id_number,
+					COALESCE(cast(tpp_extras ->>'title' as text), '') as title,
+					COALESCE(cast(tpp_extras ->>'typeid' as text), '') as type_id`).Where("tpp_tp_id = ?", data.Tp_id).Find(&persons).Error; gorm.IsRecordNotFoundError(err) {
+			return nil, "04", "Data person not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+		var respPerson []entities.TrxPerson
+
+		for _, person := range persons {
+			var dests []entities.TripDestinationTrxModel
+
+			if err := db.DB[0].Select(`tpd_group_mid,
+										trf_name, group_name,
+										tpd_amount, tpd_date::text, 
+										tpd_exp_date::text, 
+										tpd_duration`).Where("tpd_tpp_id = ?", person.Tpp_id).Joins("inner join master_tariff on trf_id = tpd_trf_id").Joins("inner join master_group on group_mid = tpd_group_mid").Find(&dests).Error; gorm.IsRecordNotFoundError(err) {
+				return nil, "05", "Data destination not found (" + err.Error() + ")", false, 0, 0, 0
+			}
+
+			tmpPerson := entities.TrxPerson{
+				Id_number:   person.Id_number,
+				Title:       person.Title,
+				Tpp_name:    person.Tpp_name,
+				Tpp_qr:      "TRP" + person.Tpp_qr,
+				Type:        person.Type,
+				Type_id:     person.Type_id,
+				Destination: dests,
+			}
+
+			respPerson = append(respPerson, tmpPerson)
+		}
+
 		var grups []entities.TripGrupName
 
 		if err := db.DB[0].Select(`distinct group_name`).Where("tp_id = ?", data.Tp_id).Joins("inner join trip_planner_person on tp_id = tpp_tp_id").Joins("inner join trip_planner_destination on tpp_id = tpd_tpp_id").Joins("inner join master_group on group_mid = tpd_group_mid").Order("group_name").Find(&grups).Error; gorm.IsRecordNotFoundError(err) {
-			return nil, "03", "Data group not found (" + err.Error() + ")", false, 0, 0, 0
+			return nil, "06", "Data group not found (" + err.Error() + ")", false, 0, 0, 0
 		}
 
 		var dest string
@@ -227,6 +269,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			Status_name:     status,
 			Tp_total_amount: data.Tp_total_amount,
 			Tp_agent_id:     data.Tp_agent_id,
+			Agent_name:      data.Agent_name,
 			Destination:     dest,
 			Contact: &entities.TrxContact{
 				Email:    data.Email,
@@ -235,6 +278,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 				Phone:    data.Phone,
 				Title:    data.Title,
 			},
+			Person: respPerson,
 		}
 
 		resp = append(resp, tmpResp)

@@ -12,6 +12,7 @@ type TripTrxModel struct {
 	Tp_total_amount float32
 	Tp_invoice      int
 	Tp_agent_id     int
+	Agent_name      string
 	Email           string
 	Title           string
 	Fullname        string
@@ -21,6 +22,34 @@ type TripTrxModel struct {
 
 func (TripTrxModel) TableName() string {
 	return "trip_planner"
+}
+
+type TripPersonTrxModel struct {
+	Tpp_id    string
+	Tpp_name  string
+	Type      string
+	Tpp_qr    string
+	Id_number string
+	Title     string
+	Type_id   string
+}
+
+func (TripPersonTrxModel) TableName() string {
+	return "trip_planner_person"
+}
+
+type TripDestinationTrxModel struct {
+	Trf_name      string  `json:"trf_name"`
+	Tpd_group_mid string  `json:"mid"`
+	Group_name    string  `json:"merchant_name"`
+	Tpd_amount    float32 `json:"amount"`
+	Tpd_duration  int     `json:"duration"`
+	Tpd_date      string  `json:"visit_date"`
+	Tpd_exp_date  string  `json:"expired_date"`
+}
+
+func (TripDestinationTrxModel) TableName() string {
+	return "trip_planner_destination"
 }
 
 type TripGrupName struct {
@@ -43,7 +72,9 @@ type TrxList struct {
 	Tp_total_amount float32     `json:"total_amount"`
 	Contact         *TrxContact `json:"contact"`
 	Tp_agent_id     int         `json:"agent_id"`
+	Agent_name      string      `json:"agent_name"`
 	Destination     string      `json:"destination"`
+	Person          []TrxPerson `json:"person"`
 }
 
 type TrxContact struct {
@@ -52,6 +83,16 @@ type TrxContact struct {
 	Fullname string `json:"full_name"`
 	Phone    string `json:"phone"`
 	Address  string `json:"address"`
+}
+
+type TrxPerson struct {
+	Tpp_name    string                    `json:"name"`
+	Type        string                    `json:"type"`
+	Tpp_qr      string                    `json:"qr_code"`
+	Id_number   string                    `json:"number_id"`
+	Type_id     string                    `json:"type_id"`
+	Title       string                    `json:"title"`
+	Destination []TripDestinationTrxModel `json:"visit"`
 }
 
 type TrpTrxModel struct {
