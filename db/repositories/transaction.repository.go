@@ -21,6 +21,9 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		return nil, "99", "Customer is required", false
 	}
 
+	if r.TotalAmount == 0 {
+		return nil, "99", "Total amount is required", false
+	}
 	if r.DestQty == 0 {
 		return nil, "99", "Destination qty is required", false
 	}
@@ -37,92 +40,82 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		return nil, "99", "End date is required", false
 	}
 
-	var vis []requests.TrxVisit
-	var totPay float32
+	// var vis []requests.TrxVisit
+	// var totPay float32
 	var name, phone, email string
 
-	for _, trip := range r.Trip {
-		totPay += trip.TotalAmount
-		tpID := uuid.NewV4()
-		stan := int(time.Now().Unix())
-		bNumber := "WB2B." + string(time.Now().Format("020106")) + "." + strconv.Itoa(stan)
-		tripPlanner := entities.TrpTrxModel{
-			Tp_id:           tpID,
-			Tp_contact:      "{}",
-			Tp_duration:     (helper.DaysBetween(helper.Date(r.StartDate), helper.Date(r.EndDate))) + 1,
-			Tp_start_date:   r.StartDate,
-			Tp_end_date:     r.EndDate,
-			Tp_number:       bNumber,
-			Tp_src_type:     r.SourceType,
-			Tp_stan:         stan,
-			Tp_status:       1,
-			Tp_total_amount: trip.TotalAmount,
-			Tp_user_id:      token.ID,
-			Tp_agent_id:     token.Typeid,
-			Created_at:      time.Now().Format("2006-01-02 15:04:05"),
+	tpID := uuid.NewV4()
+	stan := int(time.Now().Unix())
+	bNumber := "MB2B." + string(time.Now().Format("020106")) + "." + strconv.Itoa(stan)
+	tripPlanner := entities.TrpTrxModel{
+		Tp_id:           tpID,
+		Tp_contact:      "{}",
+		Tp_duration:     (helper.DaysBetween(helper.Date(r.StartDate), helper.Date(r.EndDate))) + 1,
+		Tp_start_date:   r.StartDate,
+		Tp_end_date:     r.EndDate,
+		Tp_number:       bNumber,
+		Tp_src_type:     r.SourceType,
+		Tp_stan:         stan,
+		Tp_status:       1,
+		Tp_total_amount: r.TotalAmount,
+		Tp_user_id:      token.ID,
+		Tp_agent_id:     token.Typeid,
+		Created_at:      time.Now().Format("2006-01-02 15:04:05"),
+	}
+
+	db.DB[0].NewRecord(tripPlanner)
+
+	if err := db.DB[0].Create(&tripPlanner).Error; err != nil {
+		return nil, "02", "Error when inserting trip planner data (" + err.Error() + ")", false
+	}
+
+	for _, cust := range r.Customer {
+		if cust.IsPic == true {
+			var trp entities.TrpTrxModel
+
+			if err := db.DB[0].Model(&trp).Where("tp_id = ?", tpID).Update("tp_contact", `{"nationality":"`+cust.Nationality+`", "region":"`+cust.Region+
+				`", "typeid":"`+cust.IDType+`", "id":"`+cust.IDNumber+
+				`", "idname":"`+cust.Name+`", "type":"`+cust.Type+
+				`", "title":"`+cust.Title+`", "email":"`+cust.Email+
+				`", "phone":"`+cust.Phone+`", "pic":`+strconv.FormatBool(cust.IsPic)+`}`).Error; err != nil {
+				return nil, "03", "Error when updating trip data (" + err.Error() + ")", false
+			}
+
+			name = cust.Name
+			phone = cust.Phone
+			email = cust.Email
+		}
+		tppID := uuid.NewV4()
+		qrCode := tppID.String() + `#` + strconv.Itoa(stan)
+		var custType int
+
+		if cust.Type == "adult" {
+			custType = 1
+		} else {
+			custType = 2
 		}
 
-		db.DB[0].NewRecord(tripPlanner)
-
-		if err := db.DB[0].Create(&tripPlanner).Error; err != nil {
-			return nil, "02", "Error when inserting trip planner data (" + err.Error() + ")", false
+		tripPerson := entities.PersonModel{
+			Tpp_id:    tppID,
+			Tpp_tp_id: tpID,
+			Tpp_name:  cust.Name,
+			Tpp_type:  custType,
+			Tpp_qr:    qrCode,
+			Tpp_extras: `{"nationality":"` + cust.Nationality + `", "region":"` + cust.Region +
+				`", "typeid":"` + cust.IDType + `", "id":"` + cust.IDNumber +
+				`", "idname":"` + cust.Name + `", "type":"` + cust.Type +
+				`", "title":"` + cust.Title + `", "email":"` + cust.Email +
+				`", "phone":"` + cust.Phone + `", "pic":` + strconv.FormatBool(cust.IsPic) + `}`,
+			Created_at: time.Now().Format("2006-01-02 15:04:05"),
 		}
 
-		for _, cust := range r.Customer {
-			if cust.IsPic == true {
-				var trp entities.TrpTrxModel
+		db.DB[0].NewRecord(tripPerson)
 
-				// db.DB[0].Where("tp_id = ?", tpID).Find(&trp)
-				// trp.Tp_contact = `{"nationality":"` + cust.Nationality + `", "region":"` + cust.Region +
-				// 	`", "idtype":"` + cust.IDType + `", "idnumber":"` + cust.IDNumber +
-				// 	`", "idname":"` + cust.Name + `", "type":"` + cust.Type +
-				// 	`", "title":"` + cust.Title + `", "email":"` + cust.Email +
-				// 	`", "phone":"` + cust.Phone + `", "pic":` + strconv.FormatBool(cust.IsPic) + `}`
-				// if err := db.DB[0].Save(&trp).Error; err != nil {
-				// 	return nil, "03", "Error when updating trip data (" + err.Error() + ")", false
-				// }
-				if err := db.DB[0].Model(&trp).Where("tp_id = ?", tpID).Update("tp_contact", `{"nationality":"`+cust.Nationality+`", "region":"`+cust.Region+
-					`", "typeid":"`+cust.IDType+`", "id":"`+cust.IDNumber+
-					`", "idname":"`+cust.Name+`", "type":"`+cust.Type+
-					`", "title":"`+cust.Title+`", "email":"`+cust.Email+
-					`", "phone":"`+cust.Phone+`", "pic":`+strconv.FormatBool(cust.IsPic)+`}`).Error; err != nil {
-					return nil, "03", "Error when updating trip data (" + err.Error() + ")", false
-				}
+		if err := db.DB[0].Create(&tripPerson).Error; err != nil {
+			return nil, "03", "Error when inserting trip planner person data (" + err.Error() + ")", false
+		}
 
-				name = cust.Name
-				phone = cust.Phone
-				email = cust.Email
-			}
-			tppID := uuid.NewV4()
-			qrCode := tppID.String() + `#` + strconv.Itoa(stan)
-			var custType int
-
-			if cust.Type == "adult" {
-				custType = 1
-			} else {
-				custType = 2
-			}
-
-			tripPerson := entities.PersonModel{
-				Tpp_id:    tppID,
-				Tpp_tp_id: tpID,
-				Tpp_name:  cust.Name,
-				Tpp_type:  custType,
-				Tpp_qr:    qrCode,
-				Tpp_extras: `{"nationality":"` + cust.Nationality + `", "region":"` + cust.Region +
-					`", "typeid":"` + cust.IDType + `", "id":"` + cust.IDNumber +
-					`", "idname":"` + cust.Name + `", "type":"` + cust.Type +
-					`", "title":"` + cust.Title + `", "email":"` + cust.Email +
-					`", "phone":"` + cust.Phone + `", "pic":` + strconv.FormatBool(cust.IsPic) + `}`,
-				Created_at: time.Now().Format("2006-01-02 15:04:05"),
-			}
-
-			db.DB[0].NewRecord(tripPerson)
-
-			if err := db.DB[0].Create(&tripPerson).Error; err != nil {
-				return nil, "03", "Error when inserting trip planner person data (" + err.Error() + ")", false
-			}
-
+		for _, trip := range r.Trip {
 			for _, dest := range trip.Ticket {
 				var getExp entities.GetExp
 
@@ -156,26 +149,29 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 				}
 			}
 
+			// tmpVisit := requests.TrxVisit{
+			// 	TripDate:    trip.TripDate,
+			// 	TripDay:     trip.TripDay,
+			// 	Ticket:      trip.Ticket,
+			// }
+
+			// vis = append(vis, tmpVisit)
 		}
 
-		tmpVisit := requests.TrxVisit{
-			BookingNumber: bNumber,
-			TotalAmount:   trip.TotalAmount,
-			TripDate:      trip.TripDate,
-			TripDay:       trip.TripDay,
-			Ticket:        trip.Ticket,
-		}
-
-		vis = append(vis, tmpVisit)
 	}
 
+	// if err := db.DB[0].Model(&tripPlanner).Where("tp_id = ?", tpID).Update("tp_total_amount", totPay).Error; err != nil {
+	// 	return nil, "03", "Error when updating trip data tp_total_amount (" + err.Error() + ")", false
+	// }
+
 	res := requests.TrxResp{
-		PayTotal: totPay,
-		Name:     name,
-		Email:    email,
-		Phone:    phone,
-		Cust:     r.Customer,
-		Visit:    vis,
+		BookingNumber: bNumber,
+		PayTotal:      r.TotalAmount,
+		Name:          name,
+		Email:         email,
+		Phone:         phone,
+		Cust:          r.Customer,
+		Visit:         r.Trip,
 	}
 
 	return &res, "01", "Transaction success", true
