@@ -35,12 +35,13 @@ type ValidateMemberData struct {
 }
 
 type TrxReq struct {
-	SourceType int       `json:"source_type"`
-	StartDate  string    `json:"start_date"`
-	EndDate    string    `json:"end_date"`
-	DestQty    int       `json:"destination_qty"`
-	Trip       []TrxTrip `json:"trip"`
-	Customer   []TrxCust `json:"customer"`
+	TotalAmount float32   `json:"total_amount"`
+	SourceType  int       `json:"source_type"`
+	StartDate   string    `json:"start_date"`
+	EndDate     string    `json:"end_date"`
+	DestQty     int       `json:"destination_qty"`
+	Trip        []TrxTrip `json:"trip"`
+	Customer    []TrxCust `json:"customer"`
 }
 
 type TrxReqUpdate struct {
@@ -54,10 +55,9 @@ type TrxInv struct {
 }
 
 type TrxTrip struct {
-	TripDate    string    `json:"trip_date"`
-	TripDay     int       `json:"trip_day"`
-	TotalAmount float32   `json:"total_amount"`
-	Ticket      []TrxTick `json:"ticket"`
+	TripDate string    `json:"trip_date"`
+	TripDay  int       `json:"trip_day"`
+	Ticket   []TrxTick `json:"ticket"`
 }
 
 type TrxCust struct {
@@ -83,18 +83,17 @@ type TrxTick struct {
 }
 
 type TrxResp struct {
-	PayTotal float32    `json:"payment_total"`
-	Visit    []TrxVisit `json:"visit"`
-	Name     string     `json:"cp_name"`
-	Phone    string     `json:"phone"`
-	Email    string     `json:"email"`
-	Cust     []TrxCust  `json:"customer"`
+	BookingNumber string    `json:"booking_number"`
+	PayTotal      float32   `json:"payment_total"`
+	Visit         []TrxTrip `json:"visit"`
+	Name          string    `json:"cp_name"`
+	Phone         string    `json:"phone"`
+	Email         string    `json:"email"`
+	Cust          []TrxCust `json:"customer"`
 }
 
 type TrxVisit struct {
-	BookingNumber string    `json:"booking_number"`
-	TripDate      string    `json:"booking_date"`
-	TripDay       int       `json:"trip_day"`
-	TotalAmount   float32   `json:"total_amount"`
-	Ticket        []TrxTick `json:"ticket"`
+	TripDate string    `json:"booking_date"`
+	TripDay  int       `json:"trip_day"`
+	Ticket   []TrxTick `json:"ticket"`
 }
