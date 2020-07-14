@@ -73,7 +73,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		if cust.IsPic == true {
 			var trp entities.TrpTrxModel
 
-			if err := db.DB[0].Model(&trp).Where("tp_id = ?", tpID).Update("tp_contact", `{"nationality":"`+cust.Nationality+`", "region":"`+cust.Region+
+			if err := db.DB[0].Model(&trp).Where("tp_id = ?", tpID).UpdateColumn("tp_contact", `{"nationality":"`+cust.Nationality+`", "region":"`+cust.Region+
 				`", "typeid":"`+cust.IDType+`", "id":"`+cust.IDNumber+
 				`", "idname":"`+cust.Name+`", "type":"`+cust.Type+
 				`", "title":"`+cust.Title+`", "email":"`+cust.Email+
@@ -123,7 +123,8 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 					return nil, "04", "Couldn't find tariff with id: " + strconv.Itoa(dest.TrfID) + " (" + err.Error() + ")", false
 				}
 
-				t, _ := time.Parse("2006-01-02", trip.TripDate)
+				// r.Trip[len(r.Trip)-1].TripDate
+				t, _ := time.Parse("2006-01-02", r.EndDate)
 
 				dayExp := t.Add(time.Hour*time.Duration((getExp.Expired*24)-24)).Format("2006-01-02") + " 23:59:59"
 
