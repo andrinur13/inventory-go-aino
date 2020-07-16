@@ -8,6 +8,7 @@ import (
 	"twc-ota-api/requests"
 	"twc-ota-api/utils/helper"
 
+	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -284,4 +285,122 @@ func updateTableTrx(inv string, status int, paymentMethod string) (bool, string)
 	}
 
 	return true, ""
+}
+
+//GetQR : select data trip
+func GetQR(token *entities.Users, r *requests.TrxQReq) (*entities.TrxList, string, string, bool) {
+	if r.Inv == "" {
+		return nil, "99", "Invoice number is required", false
+	}
+
+	var trip entities.TripTrxModel
+
+	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
+								agent_name,
+								COALESCE(tp_start_date::text, '') as tp_start_date, tp_agent_id,
+								COALESCE(tp_end_date::text, '') as tp_end_date,
+								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
+								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
+								coalesce(cast(tp_contact ->>'idname' as text), '') as fullname,
+								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
+								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
+								COALESCE(cast(tp_contact ->>'region' as text), '') as address`).Where("tp_agent_id = ? and tp_number = ?", token.Typeid, r.Inv).Joins("inner join master_agents on agent_id = tp_agent_id").Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "02", "Data transaction not found (" + err.Error() + ")", false
+	}
+
+	var status string
+
+	if trip.Tp_status == 1 {
+		status = "Draft"
+	} else if trip.Tp_status == 2 {
+		status = "Purchase"
+	} else if trip.Tp_status == 3 {
+		status = "Paid"
+	} else {
+		status = "Unknown"
+	}
+
+	var persons []entities.TripPersonTrxModel
+
+	if err := db.DB[0].Select(`tpp_id, tpp_name,
+					CASE 
+						WHEN tpp_type = 1 THEN 'adult'
+						WHEN tpp_type = 2 THEN 'child'
+						else 'unknown'
+					end as "type",
+					tpp_qr,
+					COALESCE(cast(tpp_extras ->>'id' as text), '') as id_number,
+					COALESCE(cast(tpp_extras ->>'title' as text), '') as title,
+					COALESCE(cast(tpp_extras ->>'typeid' as text), '') as type_id`).Where("tpp_tp_id = ?", trip.Tp_id).Find(&persons).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "04", "Data person not found (" + err.Error() + ")", false
+	}
+
+	var respPerson []entities.TrxPerson
+
+	for _, person := range persons {
+		var dests []entities.TripDestinationTrxModel
+
+		if err := db.DB[0].Select(`tpd_group_mid,
+										trf_name, group_name,
+										tpd_amount, tpd_date::text, 
+										tpd_exp_date::text, 
+										tpd_duration`).Where("tpd_tpp_id = ?", person.Tpp_id).Joins("inner join master_tariff on trf_id = tpd_trf_id").Joins("inner join master_group on group_mid = tpd_group_mid").Order("tpd_date").Find(&dests).Error; gorm.IsRecordNotFoundError(err) {
+			return nil, "05", "Data destination not found (" + err.Error() + ")", false
+		}
+
+		tmpPerson := entities.TrxPerson{
+			Id_number:   person.Id_number,
+			Title:       person.Title,
+			Tpp_name:    person.Tpp_name,
+			Tpp_qr:      "TRP" + person.Tpp_qr,
+			Type:        person.Type,
+			Type_id:     person.Type_id,
+			Destination: dests,
+		}
+
+		respPerson = append(respPerson, tmpPerson)
+	}
+
+	var grups []entities.TripGrupName
+
+	if err := db.DB[0].Select(`distinct group_name`).Where("tp_id = ?", trip.Tp_id).Joins("inner join trip_planner_person on tp_id = tpp_tp_id").Joins("inner join trip_planner_destination on tpp_id = tpd_tpp_id").Joins("inner join master_group on group_mid = tpd_group_mid").Order("group_name").Find(&grups).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "06", "Data group not found (" + err.Error() + ")", false
+	}
+
+	var dest string
+
+	for _, grup := range grups {
+		dest += grup.Group_name + ", "
+	}
+
+	z := []rune(dest)
+
+	if len(z) > 2 {
+		dest = string(z[:len(z)-2])
+	}
+
+	resp := entities.TrxList{
+		Tp_number:       trip.Tp_number,
+		Tp_invoice:      trip.Tp_invoice,
+		Tp_duration:     trip.Tp_duration,
+		Tp_start_date:   trip.Tp_start_date,
+		Tp_end_date:     trip.Tp_end_date,
+		Tp_status:       trip.Tp_status,
+		Tp_id:           trip.Tp_id,
+		Status_name:     status,
+		Tp_total_amount: trip.Tp_total_amount,
+		Tp_agent_id:     trip.Tp_agent_id,
+		Agent_name:      trip.Agent_name,
+		Destination:     dest,
+		Contact: &entities.TrxContact{
+			Email:    trip.Email,
+			Address:  trip.Address,
+			Fullname: trip.Fullname,
+			Phone:    trip.Phone,
+			Title:    trip.Title,
+		},
+		Person: respPerson,
+	}
+
+	return &resp, "01", "Success get trx data", true
 }
