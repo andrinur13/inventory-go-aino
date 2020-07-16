@@ -97,3 +97,7 @@ type TrxVisit struct {
 	TripDay  int       `json:"trip_day"`
 	Ticket   []TrxTick `json:"ticket"`
 }
+
+type TrxQReq struct {
+	Inv string `json:"invoice_number"`
+}
