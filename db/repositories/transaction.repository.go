@@ -126,7 +126,9 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 				// r.Trip[len(r.Trip)-1].TripDate
 				t, _ := time.Parse("2006-01-02", r.EndDate)
 
-				dayExp := t.Add(time.Hour*time.Duration((getExp.Expired*24)-24)).Format("2006-01-02") + " 23:59:59"
+				// dayExp := t.Add(time.Hour*time.Duration((getExp.Expired*24)-24)).Format("2006-01-02") + " 23:59:59"
+
+				dayExp := t.Format("2006-01-02") + " 23:59:59"
 
 				tpdID := uuid.NewV4()
 				tripDes := entities.DestinationModel{
