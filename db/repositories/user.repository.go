@@ -6,6 +6,7 @@ import (
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
 	"twc-ota-api/middleware"
+	"twc-ota-api/requests"
 
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
@@ -110,4 +111,50 @@ func InsertUser(r entities.UserReq) (map[string]interface{}, string, string, boo
 		"email":      r.Email,
 		"type":       r.Type,
 	}, "01", "Registration success", true
+}
+
+//UpdatePassword : update password user
+func UpdatePassword(token *entities.Users, r *requests.UpdatePassword) (map[string]interface{}, string, string, bool) {
+	var user entities.Users
+
+	if r.OldPwd == "" {
+		return nil, "99", "Old Password is required", false
+	}
+
+	if r.NewPwd == "" {
+		return nil, "99", "New Password is required", false
+	}
+
+	if r.ConfPwd == "" {
+		return nil, "99", "Confirm Password is required", false
+	}
+
+	if r.NewPwd != r.ConfPwd {
+		return nil, "02", "Confirmation password doesn't match", false
+	}
+
+	if err := db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "03", "User not found (" + err.Error() + ")", false
+	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(r.OldPwd))
+
+	if err != nil {
+		return nil, "04", "Wrong old password", false
+	}
+
+	password, err := bcrypt.GenerateFromPassword([]byte(r.NewPwd), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, "05", "General error, failed hashing password", false
+	}
+
+	if err := db.DB[0].Model(&user).Where("id = ?", token.ID).Update("password", string(password)).Error; err != nil {
+		return nil, "06", "Failed to update password", false
+	}
+
+	return map[string]interface{}{
+		"user_id":  token.ID,
+		"email":    token.Email,
+		"agent_id": user.Typeid,
+	}, "01", "Password succesfully updated", true
 }
