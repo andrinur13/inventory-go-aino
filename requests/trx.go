@@ -40,7 +40,6 @@ type TrxReq struct {
 	StartDate   string    `json:"start_date"`
 	EndDate     string    `json:"end_date"`
 	DestQty     int       `json:"destination_qty"`
-	Trip        []TrxTrip `json:"trip"`
 	Customer    []TrxCust `json:"customer"`
 }
 
@@ -61,16 +60,17 @@ type TrxTrip struct {
 }
 
 type TrxCust struct {
-	Nationality string `json:"cs_nationality"`
-	Region      string `json:"cs_region"`
-	IDType      string `json:"cs_id_type"`
-	IDNumber    string `json:"cs_id_number"`
-	Name        string `json:"cs_name"`
-	Type        string `json:"cs_type"`
-	Title       string `json:"cs_title"`
-	Email       string `json:"cs_email"`
-	Phone       string `json:"cs_phone"`
-	IsPic       bool   `json:"cs_is_pic"`
+	Nationality string    `json:"cs_nationality"`
+	Region      string    `json:"cs_region"`
+	IDType      string    `json:"cs_id_type"`
+	IDNumber    string    `json:"cs_id_number"`
+	Name        string    `json:"cs_name"`
+	Type        string    `json:"cs_type"`
+	Title       string    `json:"cs_title"`
+	Email       string    `json:"cs_email"`
+	Phone       string    `json:"cs_phone"`
+	IsPic       bool      `json:"cs_is_pic"`
+	Trip        []TrxTrip `json:"cs_trip"`
 }
 
 type TrxTick struct {
@@ -80,6 +80,8 @@ type TrxTick struct {
 	TrfName      string  `json:"trf_name"`
 	TrfQty       int     `json:"trf_qty"`
 	Amount       float32 `json:"amount"`
+	Discount     float32 `json:"discount"`
+	NettAmount   float32 `json:"nett_amount"`
 }
 
 type TrxResp struct {

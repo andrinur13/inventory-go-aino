@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 	"twc-ota-api/db"
@@ -14,10 +15,6 @@ import (
 
 // InsertTrx : insert to table trx
 func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, string, string, bool) {
-	if len(r.Trip) == 0 {
-		return nil, "99", "Trip is required", false
-	}
-
 	if len(r.Customer) == 0 {
 		return nil, "99", "Customer is required", false
 	}
@@ -116,11 +113,11 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 			return nil, "03", "Error when inserting trip planner person data (" + err.Error() + ")", false
 		}
 
-		for _, trip := range r.Trip {
+		for _, trip := range cust.Trip {
 			for _, dest := range trip.Ticket {
 				var getExp entities.GetExp
 
-				if err := db.DB[0].Select(`cast(trf_condition ->> 'expiredQr' as int) as expired`).Where("trf_id = ?", dest.TrfID).Find(&getExp).Error; err != nil {
+				if err := db.DB[1].Select(`cast(trf_condition ->> 'expiredQr' as int) as expired`).Where("trf_id = ?", dest.TrfID).Find(&getExp).Error; err != nil {
 					return nil, "04", "Couldn't find tariff with id: " + strconv.Itoa(dest.TrfID) + " (" + err.Error() + ")", false
 				}
 
@@ -131,18 +128,20 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 
 				dayExp := t.Format("2006-01-02") + " 23:59:59"
 
+				ext := `{"original_amount":` + fmt.Sprintf("%g", dest.Amount) + `, "discount":` + fmt.Sprintf("%g", dest.Discount) + `}`
+
 				tpdID := uuid.NewV4()
 				tripDes := entities.DestinationModel{
 					Tpd_id:        tpdID,
 					Tpd_tpp_id:    tppID,
-					Tpd_amount:    dest.Amount,
+					Tpd_amount:    dest.NettAmount,
 					Tpd_date:      trip.TripDate,
 					Tpd_day:       trip.TripDay,
 					Tpd_duration:  dest.SiteDuration,
 					Tpd_exp_date:  dayExp,
 					Tpd_group_mid: dest.Mmid,
 					Tpd_trf_id:    dest.TrfID,
-					Tpd_extras:    `{}`,
+					Tpd_extras:    ext,
 					Created_at:    time.Now().Format("2006-01-02 15:04:05"),
 				}
 
@@ -175,7 +174,6 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		Email:         email,
 		Phone:         phone,
 		Cust:          r.Customer,
-		Visit:         r.Trip,
 	}
 
 	return &res, "01", "Transaction success", true
