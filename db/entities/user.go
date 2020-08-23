@@ -12,6 +12,18 @@ type Users struct {
 	Created_at   string `json:"-"`
 }
 
+type PasswordReset struct {
+	ID         int `json:"-" gorm:"primary_key"`
+	Token      string
+	Email      string
+	Created_at string
+	Updated_at string `gorm:"DEFAULT:null"`
+}
+
+func (PasswordReset) TableName() string {
+	return "password_resets"
+}
+
 type UserReq struct {
 	Name          string `json:"nama_depan"`
 	Email         string `json:"email"`
