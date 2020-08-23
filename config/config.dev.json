@@ -1,7 +1,7 @@
 {
   "app":{
     "serverport":"13008",
-    "svd_host": "https://api.svd.dev.ainosi.com/"
+    "gt_host": "https://dummy.com/"
   },
   "email": {
     "host":"smtp.gmail.com",
