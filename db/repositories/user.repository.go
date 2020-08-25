@@ -174,6 +174,10 @@ func ResetPassword(r *requests.ResetPassword) (map[string]interface{}, string, s
 		return nil, "99", "Email is required", false
 	}
 
+	if e := r.Email; !helper.IsEmailValid(e) {
+		return nil, "99", "Invalid email address!", false
+	}
+
 	var user entities.Users
 	var passRes entities.PasswordReset
 
@@ -276,6 +280,10 @@ func ResetPassword(r *requests.ResetPassword) (map[string]interface{}, string, s
 func UpdateResetPassword(r *requests.UpdateResetPassword) (map[string]interface{}, string, string, bool) {
 	if r.Email == "" {
 		return nil, "99", "E-mail is required", false
+	}
+
+	if e := r.Email; !helper.IsEmailValid(e) {
+		return nil, "99", "Invalid email address!", false
 	}
 
 	if r.Token == "" {
