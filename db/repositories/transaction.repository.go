@@ -19,9 +19,9 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		return nil, "99", "Customer is required", false
 	}
 
-	if r.TotalAmount == 0 {
-		return nil, "99", "Total amount is required", false
-	}
+	// if r.TotalAmount == 0 {
+	// 	return nil, "99", "Total amount is required", false
+	// }
 	if r.DestQty == 0 {
 		return nil, "99", "Destination qty is required", false
 	}
@@ -41,6 +41,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 	// var vis []requests.TrxVisit
 	// var totPay float32
 	var name, phone, email string
+	var totalAmount float32
 
 	tpID := uuid.NewV4()
 	stan := int(time.Now().Unix())
@@ -55,7 +56,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		Tp_src_type:     r.SourceType,
 		Tp_stan:         stan,
 		Tp_status:       1,
-		Tp_total_amount: r.TotalAmount,
+		Tp_total_amount: 0,
 		Tp_user_id:      token.ID,
 		Tp_agent_id:     token.Typeid,
 		Created_at:      time.Now().Format("2006-01-02 15:04:05"),
@@ -150,6 +151,8 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 				if err := db.DB[0].Create(&tripDes).Error; err != nil {
 					return nil, "03", "Error when inserting trip planner destination data (" + err.Error() + ")", false
 				}
+
+				totalAmount += dest.NettAmount
 			}
 
 			// tmpVisit := requests.TrxVisit{
@@ -163,13 +166,13 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 
 	}
 
-	// if err := db.DB[0].Model(&tripPlanner).Where("tp_id = ?", tpID).Update("tp_total_amount", totPay).Error; err != nil {
-	// 	return nil, "03", "Error when updating trip data tp_total_amount (" + err.Error() + ")", false
-	// }
+	if err := db.DB[0].Model(&tripPlanner).Where("tp_id = ?", tpID).Update("tp_total_amount", totalAmount).Error; err != nil {
+		return nil, "03", "Error when updating trip data tp_total_amount (" + err.Error() + ")", false
+	}
 
 	res := requests.TrxResp{
 		BookingNumber: bNumber,
-		PayTotal:      r.TotalAmount,
+		PayTotal:      totalAmount,
 		Name:          name,
 		Email:         email,
 		Phone:         phone,
