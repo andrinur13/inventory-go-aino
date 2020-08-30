@@ -35,12 +35,12 @@ type ValidateMemberData struct {
 }
 
 type TrxReq struct {
-	TotalAmount float32   `json:"total_amount"`
-	SourceType  int       `json:"source_type"`
-	StartDate   string    `json:"start_date"`
-	EndDate     string    `json:"end_date"`
-	DestQty     int       `json:"destination_qty"`
-	Customer    []TrxCust `json:"customer"`
+	// TotalAmount float32   `json:"total_amount"`
+	SourceType int       `json:"source_type"`
+	StartDate  string    `json:"start_date"`
+	EndDate    string    `json:"end_date"`
+	DestQty    int       `json:"destination_qty"`
+	Customer   []TrxCust `json:"customer"`
 }
 
 type TrxReqUpdate struct {
@@ -87,7 +87,6 @@ type TrxTick struct {
 type TrxResp struct {
 	BookingNumber string    `json:"booking_number"`
 	PayTotal      float32   `json:"payment_total"`
-	Visit         []TrxTrip `json:"visit"`
 	Name          string    `json:"cp_name"`
 	Phone         string    `json:"phone"`
 	Email         string    `json:"email"`
