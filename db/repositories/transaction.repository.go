@@ -55,7 +55,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		Tp_number:       bNumber,
 		Tp_src_type:     r.SourceType,
 		Tp_stan:         stan,
-		Tp_status:       1,
+		Tp_status:       2,
 		Tp_total_amount: 0,
 		Tp_user_id:      token.ID,
 		Tp_agent_id:     token.Typeid,
