@@ -405,3 +405,98 @@ func GetQR(token *entities.Users, r *requests.TrxQReq) (*entities.TrxList, strin
 
 	return &resp, "01", "Success get trx data", true
 }
+
+//GetTrxByNumber : select data trip by number
+func GetTrxByNumber(token *entities.Users, r *requests.TrxQReq) (*entities.RespTrxNum, string, string, bool) {
+	if r.TrxNum == "" {
+		return nil, "99", "Trx number is required", false
+	}
+
+	var trip entities.TripTrxModel
+
+	if err := db.DB[0].Select(`tp_id, tp_status, tp_number, tp_duration, tp_total_amount,
+								COALESCE(tp_start_date::text, '') as tp_start_date,
+								COALESCE(tp_end_date::text, '') as tp_end_date,
+								COALESCE(trip_planner.created_at::text, '') as created_at,
+								coalesce(cast(tp_contact ->>'idname' as text), '') as fullname`).Where("tp_number = ?", r.TrxNum).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "02", "Data transaction not found (" + err.Error() + ")", false
+	}
+
+	var status string
+
+	if trip.Tp_status == 1 {
+		status = "Created"
+	} else if trip.Tp_status == 2 {
+		status = "Purchase"
+	} else if trip.Tp_status == 3 {
+		status = "Paid"
+	} else {
+		status = "Unknown"
+	}
+
+	var persons []entities.TripPersonTrxModel
+
+	if err := db.DB[0].Select(`tpp_id, tpp_name,
+					CASE 
+						WHEN tpp_type = 1 THEN 'Adult'
+						WHEN tpp_type = 2 THEN 'Child'
+						else 'unknown'
+					end as "type",
+					tpp_qr`).Where("tpp_tp_id = ?", trip.Tp_id).Find(&persons).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "04", "Data person not found (" + err.Error() + ")", false
+	}
+
+	var respPerson []entities.RespPersonNum
+
+	for _, person := range persons {
+		var dests []entities.DestinationTrxModel
+
+		if err := db.DB[0].Select(`trf_name, group_name,
+										tpd_amount, 
+										coalesce(cast(tpd_extras ->>'original_amount' as float), 0) as bruto,
+										coalesce(cast(tpd_extras ->>'discount' as float), 0) as disc`).Where("tpd_tpp_id = ?", person.Tpp_id).Joins("inner join master_tariff on trf_id = tpd_trf_id").Joins("inner join master_group on group_mid = tpd_group_mid").Order("tpd_date").Find(&dests).Error; gorm.IsRecordNotFoundError(err) {
+			return nil, "05", "Data destination not found (" + err.Error() + ")", false
+		}
+
+		tmpPerson := entities.RespPersonNum{
+			Tpp_name:    person.Tpp_name,
+			Tpp_qr:      "TRP" + person.Tpp_qr,
+			Type:        person.Type,
+			Destination: dests,
+		}
+
+		respPerson = append(respPerson, tmpPerson)
+	}
+
+	// var grups []entities.TripGrupName
+
+	// if err := db.DB[0].Select(`distinct group_name`).Where("tp_id = ?", trip.Tp_id).Joins("inner join trip_planner_person on tp_id = tpp_tp_id").Joins("inner join trip_planner_destination on tpp_id = tpd_tpp_id").Joins("inner join master_group on group_mid = tpd_group_mid").Order("group_name").Find(&grups).Error; gorm.IsRecordNotFoundError(err) {
+	// 	return nil, "06", "Data group not found (" + err.Error() + ")", false
+	// }
+
+	// var dest string
+
+	// for _, grup := range grups {
+	// 	dest += grup.Group_name + ", "
+	// }
+
+	// z := []rune(dest)
+
+	// if len(z) > 2 {
+	// 	dest = string(z[:len(z)-2])
+	// }
+
+	resp := entities.RespTrxNum{
+		Tp_number:       trip.Tp_number,
+		Tp_duration:     trip.Tp_duration,
+		Tp_start_date:   trip.Tp_start_date,
+		Tp_end_date:     trip.Tp_end_date,
+		Tp_status:       status,
+		Fullname:        trip.Fullname,
+		Tp_trx_date:     trip.Created_at,
+		Tp_total_amount: trip.Tp_total_amount,
+		Person:          respPerson,
+	}
+
+	return &resp, "01", "Success get trx data", true
+}

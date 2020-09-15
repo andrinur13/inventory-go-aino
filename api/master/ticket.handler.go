@@ -43,6 +43,7 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 		trx.PUT("/update", permission.Set("PERMISSION_MASTER_USER_SAVE", UpdateTrx))
 		trx.PUT("/pay", permission.Set("PERMISSION_MASTER_USER_SAVE", UpdateTrxPay))
 		trx.POST("/info", permission.Set("PERMISSION_MASTER_USER_SAVE", GetInfo))
+		trx.POST("/number", permission.Set("PERMISSION_MASTER_USER_SAVE", GetNumber))
 	}
 }
 
@@ -317,6 +318,31 @@ func GetInfo(c *gin.Context) {
 	userData := middleware.Decode(split[1])
 
 	data, code, msg, stat := repositories.GetQR(userData, &param)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
+// GetNumber : get trx by number
+func GetNumber(c *gin.Context) {
+	var param requests.TrxQReq
+	c.BindJSON(&param)
+
+	in, _ := json.Marshal(param)
+
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	data, code, msg, stat := repositories.GetTrxByNumber(userData, &param)
 
 	out, _ := json.Marshal(data)
 

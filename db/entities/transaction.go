@@ -18,6 +18,7 @@ type TripTrxModel struct {
 	Fullname        string
 	Phone           string
 	Address         string
+	Created_at      string
 }
 
 func (TripTrxModel) TableName() string {
@@ -128,4 +129,35 @@ func (GetExp) TableName() string {
 type UpdateTrxResp struct {
 	InvNumber string `json:"booking_number"`
 	Status    string `json:"status"`
+}
+
+type DestinationTrxModel struct {
+	Group_name string  `json:"destinasi"`
+	Trf_name   string  `json:"tarif"`
+	Tpd_amount float32 `json:"netto"`
+	Bruto      float32 `json:"bruto"`
+	Disc       float32 `json:"disc"`
+}
+
+func (DestinationTrxModel) TableName() string {
+	return "trip_planner_destination"
+}
+
+type RespTrxNum struct {
+	Tp_number       string          `json:"number"`
+	Tp_trx_date     string          `json:"trxdate"`
+	Tp_start_date   string          `json:"startdate"`
+	Tp_end_date     string          `json:"enddate"`
+	Tp_duration     int             `json:"duration"`
+	Tp_status       string          `json:"status"`
+	Tp_total_amount float32         `json:"amount"`
+	Fullname        string          `json:"piccust"`
+	Person          []RespPersonNum `json:"person"`
+}
+
+type RespPersonNum struct {
+	Tpp_name    string                `json:"cust"`
+	Type        string                `json:"type"`
+	Tpp_qr      string                `json:"QR"`
+	Destination []DestinationTrxModel `json:"detail"`
 }
