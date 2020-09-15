@@ -100,5 +100,6 @@ type TrxVisit struct {
 }
 
 type TrxQReq struct {
-	Inv string `json:"invoice_number"`
+	Inv    string `json:"invoice_number"`
+	TrxNum string `json:"trxnumber"`
 }
