@@ -415,10 +415,11 @@ func GetTrxByNumber(token *entities.Users, r *requests.TrxQReq) (*entities.RespT
 	var trip entities.TripTrxModel
 
 	if err := db.DB[0].Select(`tp_id, tp_status, tp_number, tp_duration, tp_total_amount,
+								agent_name,
 								COALESCE(tp_start_date::text, '') as tp_start_date,
 								COALESCE(tp_end_date::text, '') as tp_end_date,
 								COALESCE(trip_planner.created_at::text, '') as created_at,
-								coalesce(cast(tp_contact ->>'idname' as text), '') as fullname`).Where("tp_number = ?", r.TrxNum).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
+								coalesce(cast(tp_contact ->>'idname' as text), '') as fullname`).Where("tp_number = ?", r.TrxNum).Joins("inner join master_agents on agent_id = tp_agent_id").Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false
 	}
 
@@ -492,6 +493,7 @@ func GetTrxByNumber(token *entities.Users, r *requests.TrxQReq) (*entities.RespT
 		Tp_start_date:   trip.Tp_start_date,
 		Tp_end_date:     trip.Tp_end_date,
 		Tp_status:       status,
+		Agent:           trip.Agent_name,
 		Fullname:        trip.Fullname,
 		Tp_trx_date:     trip.Created_at,
 		Tp_total_amount: trip.Tp_total_amount,
