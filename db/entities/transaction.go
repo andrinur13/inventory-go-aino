@@ -151,6 +151,7 @@ type RespTrxNum struct {
 	Tp_duration     int             `json:"duration"`
 	Tp_status       string          `json:"status"`
 	Tp_total_amount float32         `json:"amount"`
+	Agent           string          `json:"agent"`
 	Fullname        string          `json:"piccust"`
 	Person          []RespPersonNum `json:"person"`
 }
