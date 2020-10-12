@@ -74,14 +74,14 @@ type TrxCust struct {
 }
 
 type TrxTick struct {
-	Mmid         string  `json:"mmid"`
-	SiteDuration int     `json:"site_duration"`
-	TrfID        int     `json:"trf_id"`
-	TrfName      string  `json:"trf_name"`
-	TrfQty       int     `json:"trf_qty"`
-	Amount       float32 `json:"amount"`
-	Discount     float32 `json:"discount"`
-	NettAmount   float32 `json:"nett_amount"`
+	// Mmid         string  `json:"mmid"`
+	// SiteDuration int     `json:"site_duration"`
+	TrfID      int     `json:"trf_id"`
+	TrfName    string  `json:"trf_name"`
+	TrfQty     int     `json:"trf_qty"`
+	Amount     float32 `json:"amount"`
+	Discount   float32 `json:"discount"`
+	NettAmount float32 `json:"nett_amount"`
 }
 
 type TrxResp struct {

@@ -117,9 +117,23 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		for _, trip := range cust.Trip {
 			for _, dest := range trip.Ticket {
 				var getExp entities.GetExp
+				var duration int
 
-				if err := db.DB[1].Select(`cast(trf_condition ->> 'expiredQr' as int) as expired`).Where("trf_id = ?", dest.TrfID).Find(&getExp).Error; err != nil {
+				if err := db.DB[1].Select(`cast(trf_condition ->> 'expiredQr' as int) as expired,
+											group_mid, cast(group_extras ->> 'estimate' as text) duration`).Joins("join master_group on group_id = trf_group_id").Where("trf_id = ?", dest.TrfID).Find(&getExp).Error; err != nil {
 					return nil, "04", "Couldn't find tariff with id: " + strconv.Itoa(dest.TrfID) + " (" + err.Error() + ")", false
+				}
+
+				if getExp.Duration == "" {
+					duration = 1
+				} else {
+					durconv, err := strconv.Atoi(getExp.Duration)
+
+					if err != nil {
+						return nil, "05", err.Error(), false
+					}
+
+					duration = durconv
 				}
 
 				// r.Trip[len(r.Trip)-1].TripDate
@@ -138,9 +152,9 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 					Tpd_amount:    dest.NettAmount,
 					Tpd_date:      trip.TripDate,
 					Tpd_day:       trip.TripDay,
-					Tpd_duration:  dest.SiteDuration,
+					Tpd_duration:  duration,
 					Tpd_exp_date:  dayExp,
-					Tpd_group_mid: dest.Mmid,
+					Tpd_group_mid: getExp.Group_mid,
 					Tpd_trf_id:    dest.TrfID,
 					Tpd_extras:    ext,
 					Created_at:    time.Now().Format("2006-01-02 15:04:05"),
@@ -149,7 +163,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 				db.DB[0].NewRecord(tripDes)
 
 				if err := db.DB[0].Create(&tripDes).Error; err != nil {
-					return nil, "03", "Error when inserting trip planner destination data (" + err.Error() + ")", false
+					return nil, "06", "Error when inserting trip planner destination data (" + err.Error() + ")", false
 				}
 
 				totalAmount += dest.NettAmount
