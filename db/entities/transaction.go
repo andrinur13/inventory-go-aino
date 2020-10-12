@@ -119,7 +119,9 @@ func (TrpTrxModel) TableName() string {
 }
 
 type GetExp struct {
-	Expired int
+	Expired   int
+	Group_mid string
+	Duration  string
 }
 
 func (GetExp) TableName() string {
