@@ -156,7 +156,9 @@ func GetCluster(c *gin.Context) {
 
 	userData := middleware.Decode(split[1])
 
-	data, code, msg, stat := repositories.SelectCluster(userData)
+	nationality := c.DefaultQuery("nationality", "")
+
+	data, code, msg, stat := repositories.SelectCluster(userData, nationality)
 
 	out, _ := json.Marshal(data)
 

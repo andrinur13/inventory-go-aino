@@ -114,11 +114,11 @@ func GetTicket(r interface{}, token *entities.Users) (map[string]interface{}, st
 }
 
 //SelectCluster : select data cluster
-func SelectCluster(token *entities.Users) (*[]entities.Cluster, string, string, bool) {
+func SelectCluster(token *entities.Users, nationality string) (*[]entities.Cluster, string, string, bool) {
 
 	var cluster []entities.GrupModel
 
-	if err := db.DB[1].Where("depth = 2 AND deleted_at is NULL").Find(&cluster).Error; gorm.IsRecordNotFoundError(err) {
+	if err := db.DB[1].Select("*, coalesce(cast(group_extras ->> 'detail' as text), '') as description").Where("depth = 2 AND deleted_at is NULL").Find(&cluster).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Cluster not found (" + err.Error() + ")", false
 	}
 
@@ -127,30 +127,158 @@ func SelectCluster(token *entities.Users) (*[]entities.Cluster, string, string, 
 	for _, data := range cluster {
 		var sites []entities.GrupModel
 
-		if err := db.DB[1].Select("*, COALESCE(cast(group_extras ->>'estimate' as text), '') as group_estimate").Where("depth = 3 AND parent_id = ? AND deleted_at is NULL", data.Group_id).Find(&sites).Error; err != nil {
+		if err := db.DB[1].Select(`*, COALESCE(cast(group_extras ->>'estimate' as text), '') as group_estimate, coalesce(cast(group_extras ->> 'latitude' as text), '') as lat,
+									coalesce(cast(group_extras ->> 'longitude' as text), '') as long`).Where("depth = 3 AND parent_id = ? AND deleted_at is NULL", data.Group_id).Find(&sites).Error; err != nil {
 			return nil, "03", "Error when fetching site data (" + err.Error() + ")", false
 		}
 
 		var siteResp []entities.Site
 
 		for _, site := range sites {
+			var adultTrf []entities.SiteTrfModel
+
+			if nationality == "" {
+				if err := db.DB[1].Where(`trf_group_id = ?
+									AND (trf_code ilike '%TVAD%' OR trf_code ilike '%TVDW%')
+									AND deleted_at is NULL
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "04", "Fare not found (" + err.Error() + ")", false
+				}
+			} else if nationality == "95" {
+				if err := db.DB[1].Where(`trf_group_id = ?
+									AND (trf_code ilike '%TVDW%')
+									AND deleted_at is NULL
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "04", "Fare not found (" + err.Error() + ")", false
+				}
+			} else {
+				if err := db.DB[1].Where(`trf_group_id = ?
+									AND (trf_code ilike '%TVAD%')
+									AND deleted_at is NULL
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "04", "Fare not found (" + err.Error() + ")", false
+				}
+			}
+
+			var dataAdult []entities.SiteTrfModel
+
+			for _, aTrf := range adultTrf {
+				var getTicket []entities.SiteTrfModel
+
+				if err := db.DB[1].Where("trf_id = ?", aTrf.Trf_id).Joins(`inner join master_tariffdet on trf_id = trfdet_trf_id 
+								inner join master_ticket on trfdet_mtick_id = mtick_id`).Find(&getTicket).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "05", "Ticket not found (" + err.Error() + ")", false
+				}
+
+				var ticks string
+
+				for _, tick := range getTicket {
+					ticks += tick.Mtick_name + ", "
+				}
+
+				r := []rune(ticks)
+
+				if len(r) > 2 {
+					ticks = string(r[:len(r)-2])
+				}
+
+				tmpAdult := entities.SiteTrfModel{
+					Trf_id:            aTrf.Trf_id,
+					Trf_code:          aTrf.Trf_code,
+					Trf_name:          aTrf.Trf_name,
+					Trf_currency_code: aTrf.Trf_currency_code,
+					Trfftype_name:     aTrf.Trfftype_name,
+					Trf_value:         aTrf.Trf_value,
+					Mtick_name:        ticks,
+				}
+
+				dataAdult = append(dataAdult, tmpAdult)
+			}
+
+			var childTrf []entities.SiteTrfModel
+
+			if nationality == "" {
+				if err := db.DB[1].Where(`trf_group_id = ?
+									AND (trf_code ilike '%TVCH%' OR trf_code ilike '%TVAN%')
+									AND deleted_at is NULL
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "04", "Fare not found (" + err.Error() + ")", false
+				}
+			} else if nationality == "95" {
+				if err := db.DB[1].Where(`trf_group_id = ?
+									AND (trf_code ilike '%TVAN%')
+									AND deleted_at is NULL
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "04", "Fare not found (" + err.Error() + ")", false
+				}
+			} else {
+				if err := db.DB[1].Where(`trf_group_id = ?
+									AND (trf_code ilike '%TVCH%')
+									AND deleted_at is NULL
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "04", "Fare not found (" + err.Error() + ")", false
+				}
+			}
+
+			var dataChild []entities.SiteTrfModel
+
+			for _, cTrf := range childTrf {
+				var getTicket []entities.SiteTrfModel
+
+				if err := db.DB[1].Where("trf_id = ?", cTrf.Trf_id).Joins(`inner join master_tariffdet on trf_id = trfdet_trf_id 
+								inner join master_ticket on trfdet_mtick_id = mtick_id`).Find(&getTicket).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "05", "Ticket not found (" + err.Error() + ")", false
+				}
+
+				var ticks string
+
+				for _, tick := range getTicket {
+					ticks += tick.Mtick_name + ", "
+				}
+
+				r := []rune(ticks)
+
+				if len(r) > 2 {
+					ticks = string(r[:len(r)-2])
+				}
+
+				tmpChild := entities.SiteTrfModel{
+					Trf_id:            cTrf.Trf_id,
+					Trf_code:          cTrf.Trf_code,
+					Trf_name:          cTrf.Trf_name,
+					Trf_currency_code: cTrf.Trf_currency_code,
+					Trfftype_name:     cTrf.Trfftype_name,
+					Trf_value:         cTrf.Trf_value,
+					Mtick_name:        ticks,
+				}
+
+				dataChild = append(dataChild, tmpChild)
+			}
+
 			tmpSite := entities.Site{
 				SiteID:        site.Group_id,
 				SiteMID:       site.Group_mid,
 				SiteName:      site.Group_name,
 				SiteLogo:      site.Group_logo,
 				SiteEstimated: site.Group_estimate,
+				SiteLat:       site.Lat,
+				SiteLong:      site.Long,
+				Trf: entities.SiteTrf{
+					Adult: dataAdult,
+					Child: dataChild,
+				},
 			}
 
 			siteResp = append(siteResp, tmpSite)
 		}
 
 		tmpResp := entities.Cluster{
-			ClusterID:   data.Group_id,
-			ClusterMID:  data.Group_mid,
-			ClusterName: data.Group_name,
-			ClusterLogo: data.Group_logo,
-			Site:        siteResp,
+			ClusterID:          data.Group_id,
+			ClusterMID:         data.Group_mid,
+			ClusterName:        data.Group_name,
+			ClusterLogo:        data.Group_logo,
+			Site:               siteResp,
+			ClusterDescription: data.Description,
 		}
 
 		resp = append(resp, tmpResp)

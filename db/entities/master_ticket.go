@@ -45,6 +45,9 @@ type GrupModel struct {
 	Group_label    string
 	Group_logo     string
 	Group_estimate string
+	Description    string
+	Lat            string
+	Long           string
 }
 
 func (GrupModel) TableName() string {
