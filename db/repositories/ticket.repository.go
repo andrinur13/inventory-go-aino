@@ -144,7 +144,7 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; gorm.IsRecordNotFoundError(err) {
 					return nil, "04", "Fare not found (" + err.Error() + ")", false
 				}
-			} else if nationality == "95" {
+			} else if nationality == "96" {
 				if err := db.DB[1].Where(`trf_group_id = ?
 									AND (trf_code ilike '%TVDW%')
 									AND deleted_at is NULL
@@ -204,7 +204,7 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; gorm.IsRecordNotFoundError(err) {
 					return nil, "04", "Fare not found (" + err.Error() + ")", false
 				}
-			} else if nationality == "95" {
+			} else if nationality == "96" {
 				if err := db.DB[1].Where(`trf_group_id = ?
 									AND (trf_code ilike '%TVAN%')
 									AND deleted_at is NULL
