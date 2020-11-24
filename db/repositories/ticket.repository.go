@@ -138,25 +138,25 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 			var adultTrf []entities.SiteTrfModel
 
 			if nationality == "" {
-				if err := db.DB[1].Where(`trf_group_id = ?
+				if err := db.DB[1].Select("*, trfftype_name").Where(`trf_group_id = ?
 									AND (trf_code ilike '%TVAD%' OR trf_code ilike '%TVDW%')
 									AND deleted_at is NULL
-								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; gorm.IsRecordNotFoundError(err) {
-					return nil, "04", "Fare not found (" + err.Error() + ")", false
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; err != nil {
+					return nil, "04", err.Error(), false
 				}
 			} else if nationality == "96" {
-				if err := db.DB[1].Where(`trf_group_id = ?
+				if err := db.DB[1].Select("*, trfftype_name").Where(`trf_group_id = ?
 									AND (trf_code ilike '%TVDW%')
 									AND deleted_at is NULL
-								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; gorm.IsRecordNotFoundError(err) {
-					return nil, "04", "Fare not found (" + err.Error() + ")", false
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; err != nil {
+					return nil, "04", err.Error(), false
 				}
 			} else {
-				if err := db.DB[1].Where(`trf_group_id = ?
+				if err := db.DB[1].Select("*, trfftype_name").Where(`trf_group_id = ?
 									AND (trf_code ilike '%TVAD%')
 									AND deleted_at is NULL
-								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; gorm.IsRecordNotFoundError(err) {
-					return nil, "04", "Fare not found (" + err.Error() + ")", false
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&adultTrf).Error; err != nil {
+					return nil, "04", err.Error(), false
 				}
 			}
 
@@ -165,9 +165,9 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 			for _, aTrf := range adultTrf {
 				var getTicket []entities.SiteTrfModel
 
-				if err := db.DB[1].Where("trf_id = ?", aTrf.Trf_id).Joins(`inner join master_tariffdet on trf_id = trfdet_trf_id 
-								inner join master_ticket on trfdet_mtick_id = mtick_id`).Find(&getTicket).Error; gorm.IsRecordNotFoundError(err) {
-					return nil, "05", "Ticket not found (" + err.Error() + ")", false
+				if err := db.DB[1].Select("mtick_name").Where("trf_id = ?", aTrf.Trf_id).Joins(`inner join master_tariffdet on trf_id = trfdet_trf_id 
+								inner join master_ticket on trfdet_mtick_id = mtick_id`).Find(&getTicket).Error; err != nil {
+					return nil, "05", err.Error(), false
 				}
 
 				var ticks string
@@ -198,25 +198,25 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 			var childTrf []entities.SiteTrfModel
 
 			if nationality == "" {
-				if err := db.DB[1].Where(`trf_group_id = ?
+				if err := db.DB[1].Select("*, trfftype_name").Where(`trf_group_id = ?
 									AND (trf_code ilike '%TVCH%' OR trf_code ilike '%TVAN%')
 									AND deleted_at is NULL
-								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; gorm.IsRecordNotFoundError(err) {
-					return nil, "04", "Fare not found (" + err.Error() + ")", false
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; err != nil {
+					return nil, "04", err.Error(), false
 				}
 			} else if nationality == "96" {
-				if err := db.DB[1].Where(`trf_group_id = ?
+				if err := db.DB[1].Select("*, trfftype_name").Where(`trf_group_id = ?
 									AND (trf_code ilike '%TVAN%')
 									AND deleted_at is NULL
-								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; gorm.IsRecordNotFoundError(err) {
-					return nil, "04", "Fare not found (" + err.Error() + ")", false
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; err != nil {
+					return nil, "04", err.Error(), false
 				}
 			} else {
-				if err := db.DB[1].Where(`trf_group_id = ?
+				if err := db.DB[1].Select("*, trfftype_name").Where(`trf_group_id = ?
 									AND (trf_code ilike '%TVCH%')
 									AND deleted_at is NULL
-								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; gorm.IsRecordNotFoundError(err) {
-					return nil, "04", "Fare not found (" + err.Error() + ")", false
+								`, site.Group_id).Joins("inner join master_tariff_type ON trfftype_id = trf_trfftype_id").Find(&childTrf).Error; err != nil {
+					return nil, "04", err.Error(), false
 				}
 			}
 
@@ -225,9 +225,9 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 			for _, cTrf := range childTrf {
 				var getTicket []entities.SiteTrfModel
 
-				if err := db.DB[1].Where("trf_id = ?", cTrf.Trf_id).Joins(`inner join master_tariffdet on trf_id = trfdet_trf_id 
-								inner join master_ticket on trfdet_mtick_id = mtick_id`).Find(&getTicket).Error; gorm.IsRecordNotFoundError(err) {
-					return nil, "05", "Ticket not found (" + err.Error() + ")", false
+				if err := db.DB[1].Select("mtick_name").Where("trf_id = ?", cTrf.Trf_id).Joins(`inner join master_tariffdet on trf_id = trfdet_trf_id 
+								inner join master_ticket on trfdet_mtick_id = mtick_id`).Find(&getTicket).Error; err != nil {
+					return nil, "05", err.Error(), false
 				}
 
 				var ticks string
