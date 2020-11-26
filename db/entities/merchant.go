@@ -44,3 +44,22 @@ type SiteTrfModel struct {
 func (SiteTrfModel) TableName() string {
 	return "master_tariff"
 }
+
+type SiteDetail struct {
+	Group_id     int         `json:"group_id"`
+	Group_mid    string      `json:"group_mid"`
+	Group_name   string      `json:"group_name"`
+	Group_extras GroupExtras `json:"group_extras"`
+	Group_logo   string      `json:"group_logo"`
+	Trf          SiteTrf     `json:"tariff"`
+}
+
+type GroupExtras struct {
+	Open      string `json:"open"`
+	Close     string `json:"close"`
+	Detail    string `json:"detail"`
+	Address   string `json:"address"`
+	Estimate  string `json:"estimate"`
+	Latitude  string `json:"latitude"`
+	Longitude string `json:"longitude"`
+}

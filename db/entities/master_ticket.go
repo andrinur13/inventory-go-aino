@@ -95,3 +95,21 @@ type CurrencyModel struct {
 func (CurrencyModel) TableName() string {
 	return "currency"
 }
+
+type GroupSiteModel struct {
+	Group_id   int
+	Group_mid  string
+	Group_name string
+	Group_logo string
+	Estimate   string
+	Detail     string
+	Lat        string
+	Long       string
+	Open       string
+	Close      string
+	Address    string
+}
+
+func (GroupSiteModel) TableName() string {
+	return "master_group"
+}

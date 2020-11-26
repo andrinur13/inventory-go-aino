@@ -371,6 +371,253 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 	return &resp, "01", "Success get cluster data", true
 }
 
+//GetSite : select data detail site
+func GetSite(token *entities.Users, nationality string, siteID string) (*entities.SiteDetail, string, string, bool) {
+
+	if siteID == "" {
+		return nil, "02", "site_id param is required", false
+	}
+
+	var site entities.GroupSiteModel
+
+	if err := db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
+								coalesce(cast(group_extras ->> 'open' as text), '') as "open",
+								coalesce(cast(group_extras ->> 'open' as text), '') as "close",
+								coalesce(cast(group_extras ->> 'estimate' as text), '') as estimate,
+								coalesce(cast(group_extras ->> 'detail' as text), '') as detail,
+								coalesce(cast(group_extras ->> 'address' as text), '') as address,
+								coalesce(cast(group_extras ->> 'latitude' as text), '') as lat,
+								coalesce(cast(group_extras ->> 'longitude' as text), '') as long`).Where("group_id = ? AND depth = 3 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL", siteID).First(&site).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "03", "Site not found (" + err.Error() + ")", false
+	}
+
+	var adultTrf []entities.SiteTrfModel
+
+	if nationality == "" {
+		if err := db.DB[1].Select(`trf_id,
+											trf_name,
+											trf_code,
+											CASE
+												WHEN trf_currency_code != 'IDR' THEN (trf_value::NUMERIC*curr.curr_rate::NUMERIC)
+												ELSE trf_value
+											END AS trf_value,
+											trf_currency_code, trfftype_name`).Where(`trf_group_id = ?
+											AND (trf_code ilike '%TVAD%' OR trf_code ilike '%TVDW%')
+											AND (trf_end_date IS NULL OR trf_end_date >= LOCALTIMESTAMP)
+											AND trf_agent_id = ?
+											AND deleted_at is NULL
+								`, site.Group_id, token.Typeid).Joins(`inner join master_tariff_type ON trfftype_id = trf_trfftype_id LEFT JOIN
+															(SELECT *
+															FROM currency c
+															ORDER BY c.created_at DESC
+															LIMIT 1) curr ON curr.created_at <= master_tariff.created_at
+														OR curr.created_at >= master_tariff.created_at`).Find(&adultTrf).Error; err != nil {
+			return nil, "04", err.Error(), false
+		}
+	} else if nationality == "96" {
+		if err := db.DB[1].Select(`trf_id,
+											trf_name,
+											trf_code,
+											CASE
+												WHEN trf_currency_code != 'IDR' THEN (trf_value::NUMERIC*curr.curr_rate::NUMERIC)
+												ELSE trf_value
+											END AS trf_value,
+											trf_currency_code, trfftype_name`).Where(`trf_group_id = ?
+											AND (trf_code ilike '%TVDW%')
+											AND (trf_end_date IS NULL OR trf_end_date >= LOCALTIMESTAMP)
+											AND trf_agent_id = ?
+											AND deleted_at is NULL
+								`, site.Group_id, token.Typeid).Joins(`inner join master_tariff_type ON trfftype_id = trf_trfftype_id LEFT JOIN
+															(SELECT *
+															FROM currency c
+															ORDER BY c.created_at DESC
+															LIMIT 1) curr ON curr.created_at <= master_tariff.created_at
+														OR curr.created_at >= master_tariff.created_at`).Find(&adultTrf).Error; err != nil {
+			return nil, "04", err.Error(), false
+		}
+	} else {
+		if err := db.DB[1].Select(`trf_id,
+											trf_name,
+											trf_code,
+											CASE
+												WHEN trf_currency_code != 'IDR' THEN (trf_value::NUMERIC*curr.curr_rate::NUMERIC)
+												ELSE trf_value
+											END AS trf_value,
+											trf_currency_code, trfftype_name`).Where(`trf_group_id = ?
+											AND (trf_code ilike '%TVAD%')
+											AND (trf_end_date IS NULL OR trf_end_date >= LOCALTIMESTAMP)
+											AND trf_agent_id = ?
+											AND deleted_at is NULL
+								`, site.Group_id, token.Typeid).Joins(`inner join master_tariff_type ON trfftype_id = trf_trfftype_id LEFT JOIN
+															(SELECT *
+															FROM currency c
+															ORDER BY c.created_at DESC
+															LIMIT 1) curr ON curr.created_at <= master_tariff.created_at
+														OR curr.created_at >= master_tariff.created_at`).Find(&adultTrf).Error; err != nil {
+			return nil, "04", err.Error(), false
+		}
+	}
+
+	var dataAdult []entities.SiteTrfModel
+
+	for _, aTrf := range adultTrf {
+		var getTicket []entities.SiteTrfModel
+
+		if err := db.DB[1].Select("mtick_name").Where("trf_id = ?", aTrf.Trf_id).Joins(`inner join master_tariffdet on trf_id = trfdet_trf_id 
+								inner join master_ticket on trfdet_mtick_id = mtick_id`).Find(&getTicket).Error; err != nil {
+			return nil, "05", err.Error(), false
+		}
+
+		var ticks string
+
+		for _, tick := range getTicket {
+			ticks += tick.Mtick_name + ", "
+		}
+
+		r := []rune(ticks)
+
+		if len(r) > 2 {
+			ticks = string(r[:len(r)-2])
+		}
+
+		tmpAdult := entities.SiteTrfModel{
+			Trf_id:            aTrf.Trf_id,
+			Trf_code:          aTrf.Trf_code,
+			Trf_name:          aTrf.Trf_name,
+			Trf_currency_code: aTrf.Trf_currency_code,
+			Trfftype_name:     aTrf.Trfftype_name,
+			Trf_value:         aTrf.Trf_value,
+			Mtick_name:        ticks,
+		}
+
+		dataAdult = append(dataAdult, tmpAdult)
+	}
+
+	var childTrf []entities.SiteTrfModel
+
+	if nationality == "" {
+		if err := db.DB[1].Select(`trf_id,
+											trf_name,
+											trf_code,
+											CASE
+												WHEN trf_currency_code != 'IDR' THEN (trf_value::NUMERIC*curr.curr_rate::NUMERIC)
+												ELSE trf_value
+											END AS trf_value,
+											trf_currency_code, trfftype_name`).Where(`trf_group_id = ?
+											AND (trf_code ilike '%TVAN%' OR trf_code ilike '%TVCH%')
+											AND (trf_end_date IS NULL OR trf_end_date >= LOCALTIMESTAMP)
+											AND trf_agent_id = ?
+											AND deleted_at is NULL
+								`, site.Group_id, token.Typeid).Joins(`inner join master_tariff_type ON trfftype_id = trf_trfftype_id LEFT JOIN
+															(SELECT *
+															FROM currency c
+															ORDER BY c.created_at DESC
+															LIMIT 1) curr ON curr.created_at <= master_tariff.created_at
+														OR curr.created_at >= master_tariff.created_at`).Find(&childTrf).Error; err != nil {
+			return nil, "04", err.Error(), false
+		}
+	} else if nationality == "96" {
+		if err := db.DB[1].Select(`trf_id,
+											trf_name,
+											trf_code,
+											CASE
+												WHEN trf_currency_code != 'IDR' THEN (trf_value::NUMERIC*curr.curr_rate::NUMERIC)
+												ELSE trf_value
+											END AS trf_value,
+											trf_currency_code, trfftype_name`).Where(`trf_group_id = ?
+											AND (trf_code ilike '%TVAN%')
+											AND (trf_end_date IS NULL OR trf_end_date >= LOCALTIMESTAMP)
+											AND trf_agent_id = ?
+											AND deleted_at is NULL
+								`, site.Group_id, token.Typeid).Joins(`inner join master_tariff_type ON trfftype_id = trf_trfftype_id LEFT JOIN
+															(SELECT *
+															FROM currency c
+															ORDER BY c.created_at DESC
+															LIMIT 1) curr ON curr.created_at <= master_tariff.created_at
+														OR curr.created_at >= master_tariff.created_at`).Find(&childTrf).Error; err != nil {
+			return nil, "04", err.Error(), false
+		}
+	} else {
+		if err := db.DB[1].Select(`trf_id,
+											trf_name,
+											trf_code,
+											CASE
+												WHEN trf_currency_code != 'IDR' THEN (trf_value::NUMERIC*curr.curr_rate::NUMERIC)
+												ELSE trf_value
+											END AS trf_value,
+											trf_currency_code, trfftype_name`).Where(`trf_group_id = ?
+											AND (trf_code ilike '%TVCH%')
+											AND (trf_end_date IS NULL OR trf_end_date >= LOCALTIMESTAMP)
+											AND trf_agent_id = ?
+											AND deleted_at is NULL
+								`, site.Group_id, token.Typeid).Joins(`inner join master_tariff_type ON trfftype_id = trf_trfftype_id LEFT JOIN
+															(SELECT *
+															FROM currency c
+															ORDER BY c.created_at DESC
+															LIMIT 1) curr ON curr.created_at <= master_tariff.created_at
+														OR curr.created_at >= master_tariff.created_at`).Find(&childTrf).Error; err != nil {
+			return nil, "04", err.Error(), false
+		}
+	}
+
+	var dataChild []entities.SiteTrfModel
+
+	for _, cTrf := range childTrf {
+		var getTicket []entities.SiteTrfModel
+
+		if err := db.DB[1].Select("mtick_name").Where("trf_id = ?", cTrf.Trf_id).Joins(`inner join master_tariffdet on trf_id = trfdet_trf_id 
+								inner join master_ticket on trfdet_mtick_id = mtick_id`).Find(&getTicket).Error; err != nil {
+			return nil, "05", err.Error(), false
+		}
+
+		var ticks string
+
+		for _, tick := range getTicket {
+			ticks += tick.Mtick_name + ", "
+		}
+
+		r := []rune(ticks)
+
+		if len(r) > 2 {
+			ticks = string(r[:len(r)-2])
+		}
+
+		tmpChild := entities.SiteTrfModel{
+			Trf_id:            cTrf.Trf_id,
+			Trf_code:          cTrf.Trf_code,
+			Trf_name:          cTrf.Trf_name,
+			Trf_currency_code: cTrf.Trf_currency_code,
+			Trfftype_name:     cTrf.Trfftype_name,
+			Trf_value:         cTrf.Trf_value,
+			Mtick_name:        ticks,
+		}
+
+		dataChild = append(dataChild, tmpChild)
+	}
+
+	resp := entities.SiteDetail{
+		Group_id:   site.Group_id,
+		Group_mid:  site.Group_mid,
+		Group_name: site.Group_name,
+		Group_logo: site.Group_logo,
+		Group_extras: entities.GroupExtras{
+			Open:      site.Open,
+			Close:     site.Close,
+			Address:   site.Address,
+			Detail:    site.Detail,
+			Estimate:  site.Estimate,
+			Latitude:  site.Lat,
+			Longitude: site.Long,
+		},
+		Trf: entities.SiteTrf{
+			Adult: dataAdult,
+			Child: dataChild,
+		},
+	}
+
+	return &resp, "01", "Success get detail site data", true
+}
+
 //SelectTrip : select data trip
 func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList, string, string, bool, int, int, int) {
 

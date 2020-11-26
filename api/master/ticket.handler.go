@@ -32,6 +32,10 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 		ticket.GET("/cluster", permission.Set("PERMISSION_MASTER_USER_VIEW", GetCluster))
 		ticket.POST("/tes", permission.Set("PERMISSION_MASTER_USER_VIEW", Tes))
 	}
+	site := r.Group("/site")
+	{
+		site.GET("/detail", permission.Set("PERMISSION_MASTER_USER_VIEW", DetailSite))
+	}
 	agent := r.Group("/register")
 	{
 		agent.POST("/agent", permission.Set("PERMISSION_MASTER_USER_SAVE", RegisterAgent))
@@ -159,6 +163,29 @@ func GetCluster(c *gin.Context) {
 	nationality := c.DefaultQuery("nationality", "")
 
 	data, code, msg, stat := repositories.SelectCluster(userData, nationality)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), "")
+}
+
+// DetailSite : get data site detail
+func DetailSite(c *gin.Context) {
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	nationality := c.DefaultQuery("nationality_id", "")
+	siteID := c.DefaultQuery("site_id", "")
+
+	data, code, msg, stat := repositories.GetSite(userData, nationality, siteID)
 
 	out, _ := json.Marshal(data)
 
