@@ -382,7 +382,7 @@ func GetSite(token *entities.Users, nationality string, siteID string) (*entitie
 
 	if err := db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
 								coalesce(cast(group_extras ->> 'open' as text), '') as "open",
-								coalesce(cast(group_extras ->> 'open' as text), '') as "close",
+								coalesce(cast(group_extras ->> 'close' as text), '') as "close",
 								coalesce(cast(group_extras ->> 'estimate' as text), '') as estimate,
 								coalesce(cast(group_extras ->> 'detail' as text), '') as detail,
 								coalesce(cast(group_extras ->> 'address' as text), '') as address,
