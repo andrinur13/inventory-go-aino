@@ -11,7 +11,7 @@ import (
 type appConf struct {
 	ServerPort string
 	Env        string
-	SvdHost    string
+	GtHost     string
 }
 
 // mailConf : struct for attributes needed for email config
@@ -61,12 +61,12 @@ func Init(env string) {
 			App.ServerPort = string(serverport)
 		}
 
-		var svdHost []byte
-		svdHost, _, _, err = jsonparser.Get(cfgBlob, "app", "svd_host")
+		var gtHost []byte
+		gtHost, _, _, err = jsonparser.Get(cfgBlob, "app", "gt_host")
 		if err != nil {
 			log.Fatal(err)
 		} else {
-			App.SvdHost = string(svdHost)
+			App.GtHost = string(gtHost)
 		}
 
 		var mailHost []byte

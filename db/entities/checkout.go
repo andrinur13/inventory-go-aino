@@ -18,7 +18,7 @@ type Header struct {
 	Contact     Contact `json:"contact"`
 }
 type Contact struct {
-	Title    string `json:"string"`
+	Title    string `json:"title"`
 	FullName string `json:"fullname"`
 	Phone    string `json:"phone"`
 	Email    string `json:"email"`
