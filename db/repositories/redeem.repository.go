@@ -17,7 +17,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		return nil, "99", "Format error, booking number is required", false
 	}
 
-	var qrImage string
+	// var qrImage string
 	var data []entities.RedeemResponse
 	var dataTrf []entities.TrfResponse
 	var redeemDate = time.Now()
