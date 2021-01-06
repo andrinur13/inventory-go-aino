@@ -2,16 +2,13 @@ package repositories
 
 import (
 	"strconv"
-	"strings"
 	"time"
-	"twc-ota-api/config"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
 	"twc-ota-api/requests"
 
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
-	"gopkg.in/gomail.v2"
 )
 
 // RedeemTicket : redeem ticket
@@ -150,8 +147,8 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 
 			dataTrf = append(dataTrf, tmpTrf)
 
-			qrString := strings.Replace(qrCode, "#", "%23", -1)
-			qrImage = qrImage + `<img src="https://chart.apis.google.com/chart?cht=qr&chs=300x300&chl=` + `TIC` + qrString + `&chld=H|0" />`
+			// qrString := strings.Replace(qrCode, "#", "%23", -1)
+			// qrImage = qrImage + `<img src="https://chart.apis.google.com/chart?cht=qr&chs=300x300&chl=` + `TIC` + qrString + `&chld=H|0" />`
 		}
 		var book entities.Booking
 		db.DB[0].Where("booking_id = ?", booking.Booking_id).Find(&book)
@@ -168,67 +165,67 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		data = append(data, tmpData)
 	}
 
-	m := gomail.NewMessage()
-	m.SetHeader("From", config.Mail.Email)
-	m.SetHeader("To", bookings[0].Customer_email)
-	m.SetHeader("Subject", "Redeem detail")
-	m.SetBody("text/html", `
-	<html>
-  		<head>
-		<style>
-			.coupon {
-			border: 5px dotted #bbb; /* Dotted border */
-			width: 80%;
-			border-radius: 15px; /* Rounded border */
-			margin: 0 auto; /* Center the coupon */
-			max-width: 600px;
-			}
+	// m := gomail.NewMessage()
+	// m.SetHeader("From", config.Mail.Email)
+	// m.SetHeader("To", bookings[0].Customer_email)
+	// m.SetHeader("Subject", "Redeem detail")
+	// m.SetBody("text/html", `
+	// <html>
+	// 	<head>
+	// 	<style>
+	// 		.coupon {
+	// 		border: 5px dotted #bbb; /* Dotted border */
+	// 		width: 80%;
+	// 		border-radius: 15px; /* Rounded border */
+	// 		margin: 0 auto; /* Center the coupon */
+	// 		max-width: 600px;
+	// 		}
 
-			.container {
-			padding: 2px 16px;
-			background-color: #f1f1f1;
-			}
+	// 		.container {
+	// 		padding: 2px 16px;
+	// 		background-color: #f1f1f1;
+	// 		}
 
-			.promo {
-			background: #ccc;
-			padding: 3px;
-			}
+	// 		.promo {
+	// 		background: #ccc;
+	// 		padding: 3px;
+	// 		}
 
-			.expire {
-			color: red;
-			}
-		</style>
-		</head>
-		<body>
-		<div class="coupon">
-		<div class="container">
-			<center><h3>AINO Indonesia</h3></center>
-		</div>
-		<div class="container" style="background-color:white">
-			<p>Congratulation on your successful redeem. Here is your QRCode:</p>
-		</div>
-		<div class="container">
-			<center>`+qrImage+`</center>
-		</div>
-		</div>
-		</body>
-	</html>
-	`)
+	// 		.expire {
+	// 		color: red;
+	// 		}
+	// 	</style>
+	// 	</head>
+	// 	<body>
+	// 	<div class="coupon">
+	// 	<div class="container">
+	// 		<center><h3>AINO Indonesia</h3></center>
+	// 	</div>
+	// 	<div class="container" style="background-color:white">
+	// 		<p>Congratulation on your successful redeem. Here is your QRCode:</p>
+	// 	</div>
+	// 	<div class="container">
+	// 		<center>`+qrImage+`</center>
+	// 	</div>
+	// 	</div>
+	// 	</body>
+	// </html>
+	// `)
 
-	dialer := gomail.NewPlainDialer(
-		config.Mail.Host,
-		config.Mail.Port,
-		config.Mail.Username,
-		config.Mail.Password,
-	)
+	// dialer := gomail.NewPlainDialer(
+	// 	config.Mail.Host,
+	// 	config.Mail.Port,
+	// 	config.Mail.Username,
+	// 	config.Mail.Password,
+	// )
 
-	err := dialer.DialAndSend(m)
-	if err != nil {
-		return map[string]interface{}{
-			"trf_data": dataTrf,
-		}, "08", "Redeem success, but an error occurred when sending e-mail (" + err.Error() + ")", true
-	}
+	// err := dialer.DialAndSend(m)
+	// if err != nil {
+	// 	return map[string]interface{}{
+	// 		"trf_data": dataTrf,
+	// 	}, "08", "Redeem success, but an error occurred when sending e-mail (" + err.Error() + ")", true
+	// }
 	return map[string]interface{}{
 		"redeem_data": data,
-	}, "01", "Redeem success, email sent", true
+	}, "01", "Redeem success", true
 }
