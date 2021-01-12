@@ -7,6 +7,9 @@ import (
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
 	"twc-ota-api/requests"
+
+	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 )
 
 // InsertFav : insert to table favorite
@@ -40,6 +43,7 @@ func InsertFav(token *entities.Users, r *requests.FavReq) (map[string]interface{
 	extras := `{"name":"` + r.Name + `",` + `"price_bruto":` + strconv.FormatFloat(r.Bruto, 'f', -1, 32) + `, "price_disc":` + strconv.FormatFloat(r.Disc, 'f', -1, 32) + `, "price_netto":` + strconv.FormatFloat(r.Netto, 'f', -1, 32) + `, "data":` + jData + `}`
 
 	fav := entities.Favorite{
+		Fav_id:      uuid.NewV4(),
 		Fav_user_id: token.ID,
 		Fav_data:    extras,
 		Fav_created: time.Now().Format("2006-01-02 15:04:05"),
@@ -52,4 +56,66 @@ func InsertFav(token *entities.Users, r *requests.FavReq) (map[string]interface{
 	}
 
 	return nil, "00", "Success insert favorite", true
+}
+
+// SelectFav : select from table favorite
+func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool) {
+	var fav []entities.Favorite
+
+	if err := db.DB[0].Select("fav_id, fav_data").Where("fav_deleted is null and fav_user_id = ?", token.ID).Order("fav_created desc").Find(&fav).Error; err != nil {
+		return nil, "01", err.Error(), false
+	}
+
+	if len(fav) == 0 {
+		return nil, "02", "Favorite data not found", false
+	}
+
+	var resp []entities.FavResp
+
+	for _, data := range fav {
+		var jParse requests.FavReq
+		json.Unmarshal([]byte(data.Fav_data), &jParse)
+
+		var favData []entities.FavData
+
+		for _, dataFav := range jParse.Data {
+
+			var favTrf []entities.FavTrf
+			for _, trfFav := range dataFav.Trf {
+				var trf entities.TariffModel
+
+				if err := db.DB[1].Select(`trf_name`).Where("deleted_at is null and trf_id = ?", trfFav.TrfID).Find(&trf).Error; gorm.IsRecordNotFoundError(err) {
+					return nil, "03", "No tarif data found (" + err.Error() + ")", false
+				}
+
+				tmpTrfFav := entities.FavTrf{
+					TrfID:    trfFav.TrfID,
+					TrfNetto: trfFav.TrfNetto,
+					TrfName:  trf.Trf_name,
+				}
+
+				favTrf = append(favTrf, tmpTrfFav)
+			}
+
+			tmpFavData := entities.FavData{
+				Day: dataFav.Day,
+				Trf: favTrf,
+			}
+
+			favData = append(favData, tmpFavData)
+		}
+
+		tmpResp := entities.FavResp{
+			Name:    jParse.Name,
+			Bruto:   jParse.Bruto,
+			Netto:   jParse.Netto,
+			Disc:    jParse.Disc,
+			Data:    favData,
+			PaketID: data.Fav_id,
+		}
+
+		resp = append(resp, tmpResp)
+	}
+
+	return &resp, "00", "Success get favorite", true
 }
