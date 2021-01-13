@@ -52,6 +52,7 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 	fav := r.Group("/fav")
 	{
 		fav.POST("/create", permission.Set("PERMISSION_MASTER_USER_SAVE", CreateFav))
+		fav.POST("/delete", permission.Set("PERMISSION_MASTER_USER_SAVE", DeleteFav))
 		fav.GET("/list", permission.Set("PERMISSION_MASTER_USER_SAVE", GetFav))
 	}
 }
@@ -402,6 +403,31 @@ func CreateFav(c *gin.Context) {
 	userData := middleware.Decode(split[1])
 
 	data, code, msg, stat := repositories.InsertFav(userData, &param)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
+// DeleteFav : create favorite
+func DeleteFav(c *gin.Context) {
+	var param requests.FavDelete
+	c.BindJSON(&param)
+
+	in, _ := json.Marshal(param)
+
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	data, code, msg, stat := repositories.DeleteFav(userData, &param)
 
 	out, _ := json.Marshal(data)
 

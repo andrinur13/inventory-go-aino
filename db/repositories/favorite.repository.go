@@ -119,3 +119,26 @@ func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool
 
 	return &resp, "00", "Success get favorite", true
 }
+
+// DeleteFav : delete from table favorite
+func DeleteFav(token *entities.Users, r *requests.FavDelete) (map[string]interface{}, string, string, bool) {
+	if r.FavID == "" {
+		return nil, "99", "ID is required", false
+	}
+
+	var fav entities.Favorite
+
+	if err := db.DB[0].Select(`fav_user_id`).Where("fav_deleted is null and fav_id = ?", r.FavID).Find(&fav).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "02", err.Error(), false
+	}
+
+	if fav.Fav_user_id != token.ID {
+		return nil, "03", "Couldn't delete favorite, invalid privileges", false
+	}
+
+	if err := db.DB[0].Model(&fav).Where("fav_id = ?", r.FavID).Update("fav_deleted", time.Now().Format("2006-01-02 15:04:05")).Error; err != nil {
+		return nil, "01", "Error when deleting favorite data (" + err.Error() + ")", false
+	}
+
+	return nil, "00", "Success delete favorite", true
+}

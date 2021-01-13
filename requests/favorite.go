@@ -17,3 +17,7 @@ type FavTrf struct {
 	TrfID    int     `json:"trf_id"`
 	TrfNetto float32 `json:"trf_netto"`
 }
+
+type FavDelete struct {
+	FavID string `json:"paket_id"`
+}
