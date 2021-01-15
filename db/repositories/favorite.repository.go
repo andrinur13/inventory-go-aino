@@ -40,7 +40,7 @@ func InsertFav(token *entities.Users, r *requests.FavReq) (map[string]interface{
 
 	jData := string(rData)
 
-	extras := `{"name":"` + r.Name + `",` + `"price_bruto":` + strconv.FormatFloat(r.Bruto, 'f', -1, 32) + `, "price_disc":` + strconv.FormatFloat(r.Disc, 'f', -1, 32) + `, "price_netto":` + strconv.FormatFloat(r.Netto, 'f', -1, 32) + `, "data":` + jData + `}`
+	extras := `{"name":"` + r.Name + `", "image_url":"` + r.ImageURL + `", "duration":` + strconv.Itoa(r.Duration) + `, "adult":` + strconv.Itoa(r.Adult) + `, "child":` + strconv.Itoa(r.Child) + `, "nationality_id":"` + strconv.Itoa(r.NationalityID) + `", "price_bruto":` + strconv.FormatFloat(r.Bruto, 'f', -1, 32) + `, "price_disc":` + strconv.FormatFloat(r.Disc, 'f', -1, 32) + `, "price_netto":` + strconv.FormatFloat(r.Netto, 'f', -1, 32) + `, "data":` + jData + `}`
 
 	fav := entities.Favorite{
 		Fav_id:      uuid.NewV4(),
@@ -90,6 +90,8 @@ func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool
 
 				tmpTrfFav := entities.FavTrf{
 					TrfID:    trfFav.TrfID,
+					TrfCode:  trfFav.TrfCode,
+					TrfQty:   trfFav.TrfQty,
 					TrfNetto: trfFav.TrfNetto,
 					TrfName:  trf.Trf_name,
 				}
@@ -106,12 +108,17 @@ func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool
 		}
 
 		tmpResp := entities.FavResp{
-			Name:    jParse.Name,
-			Bruto:   jParse.Bruto,
-			Netto:   jParse.Netto,
-			Disc:    jParse.Disc,
-			Data:    favData,
-			PaketID: data.Fav_id,
+			Name:          jParse.Name,
+			ImageURL:      jParse.ImageURL,
+			Duration:      jParse.Duration,
+			NationalityID: jParse.NationalityID,
+			Adult:         jParse.Adult,
+			Child:         jParse.Child,
+			Bruto:         jParse.Bruto,
+			Netto:         jParse.Netto,
+			Disc:          jParse.Disc,
+			Data:          favData,
+			PaketID:       data.Fav_id,
 		}
 
 		resp = append(resp, tmpResp)
