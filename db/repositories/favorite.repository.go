@@ -40,7 +40,7 @@ func InsertFav(token *entities.Users, r *requests.FavReq) (map[string]interface{
 
 	jData := string(rData)
 
-	extras := `{"name":"` + r.Name + `", "image_url":"` + r.ImageURL + `", "duration":` + strconv.Itoa(r.Duration) + `, "adult":` + strconv.Itoa(r.Adult) + `, "child":` + strconv.Itoa(r.Child) + `, "nationality_id":"` + strconv.Itoa(r.NationalityID) + `", "price_bruto":` + strconv.FormatFloat(r.Bruto, 'f', -1, 32) + `, "price_disc":` + strconv.FormatFloat(r.Disc, 'f', -1, 32) + `, "price_netto":` + strconv.FormatFloat(r.Netto, 'f', -1, 32) + `, "data":` + jData + `}`
+	extras := `{"name":"` + r.Name + `", "image_url":"` + r.ImageURL + `", "duration":` + strconv.Itoa(r.Duration) + `, "adult":` + strconv.Itoa(r.Adult) + `, "child":` + strconv.Itoa(r.Child) + `, "nationality_id":` + strconv.Itoa(r.NationalityID) + `, "price_bruto":` + strconv.FormatFloat(r.Bruto, 'f', -1, 32) + `, "price_disc":` + strconv.FormatFloat(r.Disc, 'f', -1, 32) + `, "price_netto":` + strconv.FormatFloat(r.Netto, 'f', -1, 32) + `, "data":` + jData + `}`
 
 	fav := entities.Favorite{
 		Fav_id:      uuid.NewV4(),
