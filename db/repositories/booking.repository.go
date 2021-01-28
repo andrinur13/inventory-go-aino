@@ -3,13 +3,11 @@ package repositories
 import (
 	"strconv"
 	"time"
-	"twc-ota-api/config"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
 	"twc-ota-api/requests"
 
 	"github.com/jinzhu/gorm"
-	"gopkg.in/gomail.v2"
 )
 
 // BookingTicket : booking ticket
@@ -141,73 +139,73 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		}
 	}
 
-	m := gomail.NewMessage()
-	m.SetHeader("From", config.Mail.Email)
-	m.SetHeader("To", r.Email)
-	m.SetHeader("Subject", "Booking detail")
-	m.SetBody("text/html", `
-	<html>
-  		<head>
-		<style>
-			.coupon {
-			border: 5px dotted #bbb; /* Dotted border */
-			width: 80%;
-			border-radius: 15px; /* Rounded border */
-			margin: 0 auto; /* Center the coupon */
-			max-width: 600px;
-			}
+	// m := gomail.NewMessage()
+	// m.SetHeader("From", config.Mail.Email)
+	// m.SetHeader("To", r.Email)
+	// m.SetHeader("Subject", "Booking detail")
+	// m.SetBody("text/html", `
+	// <html>
+	// 	<head>
+	// 	<style>
+	// 		.coupon {
+	// 		border: 5px dotted #bbb; /* Dotted border */
+	// 		width: 80%;
+	// 		border-radius: 15px; /* Rounded border */
+	// 		margin: 0 auto; /* Center the coupon */
+	// 		max-width: 600px;
+	// 		}
 
-			.container {
-			padding: 2px 16px;
-			background-color: #f1f1f1;
-			}
+	// 		.container {
+	// 		padding: 2px 16px;
+	// 		background-color: #f1f1f1;
+	// 		}
 
-			.promo {
-			background: #ccc;
-			padding: 3px;
-			}
+	// 		.promo {
+	// 		background: #ccc;
+	// 		padding: 3px;
+	// 		}
 
-			.expire {
-			color: red;
-			}
-		</style>
-		</head>
-		<body>
-		<div class="coupon">
-		<div class="container">
-			<center><h3>AINO Indonesia</h3></center>
-		</div>
-		<div class="container" style="background-color:white">
-			<p>Congratulation! Your booking detail are listed below:</p>
-		</div>
-		<div class="container">
-			<p>UUID: `+booking.Booking_uuid+`</p>
-			<p>Invoice number: `+invNumber+`</p>
-			<p>Booking number: <span class="promo">`+booking.Booking_number+`</span></p>
-		</div>
-		</div>
-		</body>
-	</html>
-	`)
+	// 		.expire {
+	// 		color: red;
+	// 		}
+	// 	</style>
+	// 	</head>
+	// 	<body>
+	// 	<div class="coupon">
+	// 	<div class="container">
+	// 		<center><h3>AINO Indonesia</h3></center>
+	// 	</div>
+	// 	<div class="container" style="background-color:white">
+	// 		<p>Congratulation! Your booking detail are listed below:</p>
+	// 	</div>
+	// 	<div class="container">
+	// 		<p>UUID: `+booking.Booking_uuid+`</p>
+	// 		<p>Invoice number: `+invNumber+`</p>
+	// 		<p>Booking number: <span class="promo">`+booking.Booking_number+`</span></p>
+	// 	</div>
+	// 	</div>
+	// 	</body>
+	// </html>
+	// `)
 
-	dialer := gomail.NewPlainDialer(
-		config.Mail.Host,
-		config.Mail.Port,
-		config.Mail.Username,
-		config.Mail.Password,
-	)
+	// dialer := gomail.NewPlainDialer(
+	// 	config.Mail.Host,
+	// 	config.Mail.Port,
+	// 	config.Mail.Username,
+	// 	config.Mail.Password,
+	// )
 
-	err := dialer.DialAndSend(m)
-	if err != nil {
-		return map[string]interface{}{
-			"data_tariff": r.Trf,
-			"booking_detail": map[string]interface{}{
-				"booking_UUID":           booking.Booking_uuid,
-				"booking_invoice_number": invNumber,
-				"booking_number":         booking.Booking_number,
-			},
-		}, "08", "Booking success, but an error occurred when sending e-mail (" + err.Error() + ")", true
-	}
+	// err := dialer.DialAndSend(m)
+	// if err != nil {
+	// 	return map[string]interface{}{
+	// 		"data_tariff": r.Trf,
+	// 		"booking_detail": map[string]interface{}{
+	// 			"booking_UUID":           booking.Booking_uuid,
+	// 			"booking_invoice_number": invNumber,
+	// 			"booking_number":         booking.Booking_number,
+	// 		},
+	// 	}, "08", "Booking success, but an error occurred when sending e-mail (" + err.Error() + ")", true
+	// }
 
 	return map[string]interface{}{
 		"data_tariff": r.Trf,
@@ -216,5 +214,5 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 			"booking_invoice_number": invNumber,
 			"booking_number":         booking.Booking_number,
 		},
-	}, "01", "Booking success, email sent", true
+	}, "01", "Booking success", true
 }
