@@ -38,7 +38,9 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		return nil, "99", "End date is required", false
 	}
 
-	if r.TransactionStatus != 1 || r.TransactionStatus != 2 {
+	if r.TransactionStatus == 1 || r.TransactionStatus == 2 {
+
+	} else {
 		return nil, "99", "Invalid transaction_value status", false
 	}
 
