@@ -36,11 +36,12 @@ type ValidateMemberData struct {
 
 type TrxReq struct {
 	// TotalAmount float32   `json:"total_amount"`
-	SourceType int       `json:"source_type"`
-	StartDate  string    `json:"start_date"`
-	EndDate    string    `json:"end_date"`
-	DestQty    int       `json:"destination_qty"`
-	Customer   []TrxCust `json:"customer"`
+	SourceType        int       `json:"source_type"`
+	StartDate         string    `json:"start_date"`
+	TransactionStatus int       `json:transaction_status`
+	EndDate           string    `json:"end_date"`
+	DestQty           int       `json:"destination_qty"`
+	Customer          []TrxCust `json:"customer"`
 }
 
 type TrxReqUpdate struct {

@@ -12,6 +12,7 @@ type TripTrxModel struct {
 	Tp_total_amount float32
 	Tp_invoice      int
 	Tp_agent_id     int
+	Expired         bool
 	Agent_name      string
 	Email           string
 	Title           string
@@ -68,7 +69,9 @@ type TrxList struct {
 	Tp_start_date   string      `json:"start_date"`
 	Tp_end_date     string      `json:"end_date"`
 	Tp_duration     int         `json:"duration"`
+	Expired         bool        `json:"expired"`
 	Tp_status       int         `json:"tp_status"`
+	Created_at      string      `json:"created_at"`
 	Status_name     string      `json:"status_name"`
 	Tp_total_amount float32     `json:"total_amount"`
 	Contact         *TrxContact `json:"contact"`
