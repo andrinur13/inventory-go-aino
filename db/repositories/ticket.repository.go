@@ -660,7 +660,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 
 		if data.Tp_status == 1 {
 			status = "Transaction Saved"
-		} else if data.Tp_status == 2 {
+		} else if data.Tp_status == 2 && data.Expired == false {
 			status = "Payment Pending"
 		} else if data.Tp_status == 3 {
 			status = "Payment Success"
