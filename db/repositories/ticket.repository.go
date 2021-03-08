@@ -649,16 +649,6 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 
 	for _, data := range trip {
 
-		if data.Tp_status == 1 {
-			status = "Transaction Saved"
-		} else if data.Tp_status == 2 {
-			status = "Payment Pending"
-		} else if data.Tp_status == 3 {
-			status = "Payment Success"
-		} else {
-			status = "Unknown"
-		}
-
 		createdat, _ := time.Parse("2006-01-02", data.Created_at)
 		now := time.Now()
 
@@ -666,6 +656,18 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			data.Expired = true
 		} else {
 			data.Expired = false
+		}
+
+		if data.Tp_status == 1 {
+			status = "Transaction Saved"
+		} else if data.Tp_status == 2 {
+			status = "Payment Pending"
+		} else if data.Tp_status == 3 {
+			status = "Payment Success"
+		} else if data.Tp_status == 2 && data.Expired == true {
+			status = "Expired at " + createdat
+		} else {
+			status = "Unknown"
 		}
 
 		var persons []entities.TripPersonTrxModel
