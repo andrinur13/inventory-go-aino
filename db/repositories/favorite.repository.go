@@ -112,7 +112,7 @@ func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool
 		image_url = jParse.ImageURL
 
 		if image_url == "" {
-			image_url = "uploads/b2bm/package/default_package.jpg"
+			image_url = "b2bm/package/default_package.jpg"
 		}
 
 		tmpResp := entities.FavResp{
