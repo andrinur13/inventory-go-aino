@@ -107,9 +107,17 @@ func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool
 			favData = append(favData, tmpFavData)
 		}
 
+		var image_url string
+		
+		image_url = jParse.ImageURL
+
+		if image_url == "" {
+			image_url = "uploads/b2bm/package/default_package.jpg"
+		}
+
 		tmpResp := entities.FavResp{
 			Name:          jParse.Name,
-			ImageURL:      jParse.ImageURL,
+			ImageURL:      image_url,
 			Duration:      jParse.Duration,
 			NationalityID: jParse.NationalityID,
 			Adult:         jParse.Adult,
