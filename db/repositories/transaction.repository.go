@@ -80,7 +80,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 
 			if err := db.DB[0].Model(&trp).Where("tp_id = ?", tpID).UpdateColumn("tp_contact", `{"nationality":"`+cust.Nationality+`", "region":"`+cust.Region+
 				`", "typeid":"`+cust.IDType+`", "id":"`+cust.IDNumber+
-				`", "full_name":"`+cust.Name+`", "type":"`+cust.Type+
+				`", "idname":"`+cust.Name+`", "type":"`+cust.Type+
 				`", "title":"`+cust.Title+`", "email":"`+cust.Email+
 				`", "phone":"`+cust.Phone+`", "pic":`+strconv.FormatBool(cust.IsPic)+`}`).Error; err != nil {
 				return nil, "03", "Error when updating trip data (" + err.Error() + ")", false
@@ -108,7 +108,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 			Tpp_qr:    qrCode,
 			Tpp_extras: `{"nationality":"` + cust.Nationality + `", "region":"` + cust.Region +
 				`", "typeid":"` + cust.IDType + `", "id":"` + cust.IDNumber +
-				`", "full_name":"` + cust.Name + `", "type":"` + cust.Type +
+				`", "idname":"` + cust.Name + `", "type":"` + cust.Type +
 				`", "title":"` + cust.Title + `", "email":"` + cust.Email +
 				`", "phone":"` + cust.Phone + `", "pic":` + strconv.FormatBool(cust.IsPic) + `}`,
 			Created_at: time.Now().Format("2006-01-02 15:04:05"),
@@ -322,7 +322,7 @@ func GetQR(token *entities.Users, r *requests.TrxQReq) (*entities.TrxList, strin
 								COALESCE(tp_end_date::text, '') as tp_end_date,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
-								COALESCE(cast(tp_contact ->>'full_name' as text), '') as fullname,
+								coalesce(cast(tp_contact ->>'idname' as text), '') as fullname,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
 								COALESCE(cast(tp_contact ->>'region' as text), '') as address`).Where("tp_agent_id = ? and tp_number = ?", token.Typeid, r.Inv).Joins("inner join master_agents on agent_id = tp_agent_id").Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
@@ -439,7 +439,7 @@ func GetTrxByNumber(token *entities.Users, r *requests.TrxQReq) (*entities.RespT
 								COALESCE(tp_start_date::text, '') as tp_start_date,
 								COALESCE(tp_end_date::text, '') as tp_end_date,
 								COALESCE(trip_planner.created_at::text, '') as created_at,
-								coalesce(cast(tp_contact ->>'full_name' as text), '') as fullname`).Where("tp_number = ?", r.TrxNum).Joins("inner join master_agents on agent_id = tp_agent_id").Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
+								coalesce(cast(tp_contact ->>'idname' as text), '') as fullname`).Where("tp_number = ?", r.TrxNum).Joins("inner join master_agents on agent_id = tp_agent_id").Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false
 	}
 
