@@ -637,7 +637,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 								COALESCE(tp_end_date::text, '') as tp_end_date,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
-								COALESCE(cast(tp_contact ->>'fullname' as text), '') as fullname,
+								COALESCE(cast(tp_contact ->>'full_name' as text), '') as full_name,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
 								COALESCE(cast(tp_contact ->>'address' as text), '') as address`).Where("tp_agent_id = ?", token.Typeid).Joins("inner join master_agents on agent_id = tp_agent_id").Order("tp_invoice desc").Limit(limit).Offset(offset).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
