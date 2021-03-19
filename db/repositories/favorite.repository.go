@@ -108,7 +108,7 @@ func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool
 		}
 
 		var image_url string
-		
+
 		image_url = jParse.ImageURL
 
 		if image_url == "" {
@@ -156,4 +156,16 @@ func DeleteFav(token *entities.Users, r *requests.FavDelete) (map[string]interfa
 	}
 
 	return nil, "00", "Success delete favorite", true
+}
+
+//StoreFavImage :
+func StoreFavImage(favID, imagePath string) error {
+	if e := db.DB[0].Exec(`
+		UPDATE public.favorite
+		SET fav_data = jsonb_set(fav_data, '{image_url}', '"`+imagePath+`"')
+		WHERE fav_id = ?;
+	`, favID).GetErrors(); len(e) > 0 {
+		return e[0]
+	}
+	return nil
 }

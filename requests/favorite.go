@@ -28,3 +28,8 @@ type FavTrf struct {
 type FavDelete struct {
 	FavID string `json:"paket_id"`
 }
+
+type FavUploadImage struct {
+	FavID string `json:"paket_id"`
+	Image string `json:"image"`
+}

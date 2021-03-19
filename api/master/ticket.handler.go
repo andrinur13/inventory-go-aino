@@ -1,12 +1,17 @@
 package master
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+	"twc-ota-api/config"
 	"twc-ota-api/db/entities"
 	"twc-ota-api/db/repositories"
 	"twc-ota-api/logger"
@@ -15,6 +20,7 @@ import (
 	"twc-ota-api/service"
 	"twc-ota-api/utils/builder"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 )
 
@@ -54,6 +60,7 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 		fav.POST("/create", permission.Set("PERMISSION_MASTER_USER_SAVE", CreateFav))
 		fav.POST("/delete", permission.Set("PERMISSION_MASTER_USER_SAVE", DeleteFav))
 		fav.GET("/list", permission.Set("PERMISSION_MASTER_USER_SAVE", GetFav))
+		fav.POST("/image", permission.Set("PERMISSION_MASTER_USER_SAVE", UploadFavImage))
 	}
 }
 
@@ -460,6 +467,69 @@ func GetFav(c *gin.Context) {
 	c.Header("Transfer-Encoding", "identity")
 	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
 	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), string(in))
+}
+
+//UploadFavImage :
+func UploadFavImage(c *gin.Context) {
+	var param requests.FavUploadImage
+	in, _ := json.Marshal(param)
+	const IMGPREFIX string = "FAVIMAGE:"
+	var success bool
+	var message string
+	code := "01"
+	if e := c.BindJSON(&param); e != nil {
+		message = "Invalid request format"
+	} else {
+		//convert base64 to bytearray
+		if byteImage, e := base64.StdEncoding.DecodeString(param.Image); e != nil {
+			message = "Unable to decode base64 image"
+		} else {
+			//check for uploaded file mimetype
+			allowedMIMETypes := []string{"image/jpeg", "image/png"}
+			mime := mimetype.Detect(byteImage)
+			if !mimetype.EqualsAny(mime.String(), allowedMIMETypes...) {
+				message = "Image format not supported, please use either jpg or png image format."
+			} else {
+				//generate file name
+				hashImageName := fmt.Sprintf("%x", sha256.Sum256([]byte(IMGPREFIX+param.FavID)))
+				filePath := filepath.Join(config.App.ImageDirectory, filepath.Base(hashImageName))
+				//try removing file
+				os.Remove(filePath)
+				//write image file to storage
+				if file, e := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666); e != nil {
+					message = fmt.Sprintf("Unable to store image (%v)", e.Error())
+				} else {
+					defer file.Close()
+					if _, e := file.Write(byteImage); e != nil {
+						message = fmt.Sprintf("Unable to store image (%v)", e.Error())
+					} else {
+						if e := file.Sync(); e != nil {
+							message = fmt.Sprintf("Unable to store image (%v)", e.Error())
+						} else {
+							//update to database
+							if e := repositories.StoreFavImage(param.FavID, filePath); e != nil {
+								//remove file if update file
+								os.Remove(filePath)
+								message = fmt.Sprintf("Unable to store image (%v)", e.Error())
+							} else {
+								code = "00"
+								message = "Image stored successfully"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	out, _ := json.Marshal(gin.H{})
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(success, message, code, gin.H{}))
+	logger.Info(message, code, success, fmt.Sprintf("%v", gin.H{}), string(in))
 }
 
 //Tes : for testing purpose

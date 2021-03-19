@@ -1,7 +1,8 @@
 {
     "app":{
       "serverport":"13003",
-      "svd_host": "https://api.svd.sbx.ainosi.com/"
+      "svd_host": "https://api.svd.sbx.ainosi.com/",
+      "image_directory": "/var/www/html/public/b2bm/package"
     },
     "databases":[
       {
