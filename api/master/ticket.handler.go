@@ -474,6 +474,8 @@ func UploadFavImage(c *gin.Context) {
 	var param requests.FavUploadImage
 	in, _ := json.Marshal(param)
 	const IMGPREFIX string = "FAVIMAGE:"
+	const MIMETYPEJPEG string = "image/jpeg"
+	const MIMETYPEPNG string = "image/png"
 	var success bool
 	var message string
 	code := "01"
@@ -493,6 +495,21 @@ func UploadFavImage(c *gin.Context) {
 				//generate file name
 				hashImageName := fmt.Sprintf("%x", sha256.Sum256([]byte(IMGPREFIX+param.FavID)))
 				filePath := filepath.Join(config.App.ImageDirectory, filepath.Base(hashImageName))
+				//add file extension
+				switch mime.String() {
+				case MIMETYPEJPEG:
+					{
+						filePath += ".jpg"
+					}
+				case MIMETYPEPNG:
+					{
+						filePath += ".png"
+					}
+				default:
+					{
+						//don't add anything
+					}
+				}
 				//try removing file
 				os.Remove(filePath)
 				//write image file to storage
