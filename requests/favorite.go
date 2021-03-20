@@ -2,6 +2,7 @@ package requests
 
 type FavReq struct {
 	Name          string    `json:"name"`
+	Image         string    `json:"image"`
 	ImageURL      string    `json:"image_url"`
 	Duration      int       `json:"duration"`
 	Adult         int       `json:"adult"`

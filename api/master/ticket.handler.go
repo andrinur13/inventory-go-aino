@@ -22,7 +22,12 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
+	uuid "github.com/satori/go.uuid"
 )
+
+const IMGPREFIX string = "FAVIMAGE:"
+const MIMETYPEJPEG string = "image/jpeg"
+const MIMETYPEPNG string = "image/png"
 
 var cm *service.CacheManager
 
@@ -409,7 +414,69 @@ func CreateFav(c *gin.Context) {
 
 	userData := middleware.Decode(split[1])
 
-	data, code, msg, stat := repositories.InsertFav(userData, &param)
+	var filePath string
+	var imageIsStored bool
+	var stat bool
+	data := make(map[string]interface{})
+	code := "01"
+	msg := "Failed to save image"
+	//generate UUID
+	favID := uuid.NewV4()
+	if param.Image != "" {
+		//convert base64 to bytearray
+		if byteImage, e := base64.StdEncoding.DecodeString(param.Image); e != nil {
+			imageIsStored = false
+		} else {
+			//check for uploaded file mimetype
+			allowedMIMETypes := []string{"image/jpeg", "image/png"}
+			mime := mimetype.Detect(byteImage)
+			if !mimetype.EqualsAny(mime.String(), allowedMIMETypes...) {
+				imageIsStored = false
+			} else {
+				//generate file name
+				hashImageName := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%v%v", IMGPREFIX, favID))))
+				filePath = filepath.Join(config.App.ImageDirectory, filepath.Base(hashImageName))
+				//add file extension
+				switch mime.String() {
+				case MIMETYPEJPEG:
+					{
+						filePath += ".jpg"
+					}
+				case MIMETYPEPNG:
+					{
+						filePath += ".png"
+					}
+				default:
+					{
+						//don't add anything
+					}
+				}
+				//try removing file
+				os.Remove(filePath)
+				//write image file to storage
+				if file, e := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666); e != nil {
+					imageIsStored = false
+				} else {
+					defer file.Close()
+					if _, e := file.Write(byteImage); e != nil {
+						imageIsStored = false
+					} else {
+						if e := file.Sync(); e != nil {
+							imageIsStored = false
+						} else {
+							imageIsStored = true
+							param.ImageURL = filePath
+						}
+					}
+				}
+			}
+		}
+	} else {
+		imageIsStored = true
+	}
+	if imageIsStored {
+		data, code, msg, stat = repositories.InsertFav(favID, userData, &param)
+	}
 
 	out, _ := json.Marshal(data)
 
@@ -473,9 +540,6 @@ func GetFav(c *gin.Context) {
 func UploadFavImage(c *gin.Context) {
 	var param requests.FavUploadImage
 	in, _ := json.Marshal(param)
-	const IMGPREFIX string = "FAVIMAGE:"
-	const MIMETYPEJPEG string = "image/jpeg"
-	const MIMETYPEPNG string = "image/png"
 	var success bool
 	var message string
 	code := "01"
