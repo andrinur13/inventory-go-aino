@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +22,7 @@ import (
 	"twc-ota-api/utils/builder"
 
 	"github.com/gabriel-vasile/mimetype"
+	limits "github.com/gin-contrib/size"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -33,6 +35,7 @@ var cm *service.CacheManager
 
 // TicketRouter : Routing
 func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheManager *service.CacheManager) {
+	r.Use(limits.RequestSizeLimiter(2000))
 	cm = cacheManager
 	ticket := r.Group("/ticket")
 	{
@@ -428,7 +431,7 @@ func CreateFav(c *gin.Context) {
 			imageIsStored = false
 		} else {
 			//check for uploaded file mimetype
-			allowedMIMETypes := []string{"image/jpeg", "image/png"}
+			allowedMIMETypes := []string{MIMETYPEJPEG, MIMETYPEPNG}
 			mime := mimetype.Detect(byteImage)
 			if !mimetype.EqualsAny(mime.String(), allowedMIMETypes...) {
 				imageIsStored = false
@@ -465,7 +468,8 @@ func CreateFav(c *gin.Context) {
 							imageIsStored = false
 						} else {
 							imageIsStored = true
-							param.ImageURL = filePath
+							rgx := regexp.MustCompile("/var/www/html/public")
+							param.ImageURL = rgx.ReplaceAllString(filePath, "/static")
 						}
 					}
 				}
@@ -551,7 +555,7 @@ func UploadFavImage(c *gin.Context) {
 			message = "Unable to decode base64 image"
 		} else {
 			//check for uploaded file mimetype
-			allowedMIMETypes := []string{"image/jpeg", "image/png"}
+			allowedMIMETypes := []string{MIMETYPEJPEG, MIMETYPEPNG}
 			mime := mimetype.Detect(byteImage)
 			if !mimetype.EqualsAny(mime.String(), allowedMIMETypes...) {
 				message = "Image format not supported, please use either jpg or png image format."
@@ -588,7 +592,8 @@ func UploadFavImage(c *gin.Context) {
 							message = fmt.Sprintf("Unable to store image (%v)", e.Error())
 						} else {
 							//update to database
-							if e := repositories.StoreFavImage(param.FavID, filePath); e != nil {
+							rgx := regexp.MustCompile("/var/www/html/public")
+							if e := repositories.StoreFavImage(param.FavID, rgx.ReplaceAllString(filePath, "/static")); e != nil {
 								//remove file if update file
 								os.Remove(filePath)
 								message = fmt.Sprintf("Unable to store image (%v)", e.Error())
