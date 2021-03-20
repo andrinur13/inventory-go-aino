@@ -22,7 +22,7 @@ import (
 	"twc-ota-api/utils/builder"
 
 	"github.com/gabriel-vasile/mimetype"
-	limits "github.com/gin-contrib/size"
+	// limits "github.com/gin-contrib/size"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 )
@@ -35,7 +35,7 @@ var cm *service.CacheManager
 
 // TicketRouter : Routing
 func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheManager *service.CacheManager) {
-	r.Use(limits.RequestSizeLimiter(2000))
+	// r.Use(limits.RequestSizeLimiter(2000))
 	cm = cacheManager
 	ticket := r.Group("/ticket")
 	{
