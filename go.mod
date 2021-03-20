@@ -7,6 +7,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gabriel-vasile/mimetype v1.2.0
+	github.com/gin-contrib/size v0.0.0-20200916080119-37b334d93b20
 	github.com/gin-gonic/gin v1.6.3
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jinzhu/gorm v1.9.16
