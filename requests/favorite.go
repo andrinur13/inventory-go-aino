@@ -2,6 +2,7 @@ package requests
 
 type FavReq struct {
 	Name          string    `json:"name"`
+	Image         string    `json:"image"`
 	ImageURL      string    `json:"image_url"`
 	Duration      int       `json:"duration"`
 	Adult         int       `json:"adult"`
@@ -27,4 +28,9 @@ type FavTrf struct {
 
 type FavDelete struct {
 	FavID string `json:"paket_id"`
+}
+
+type FavUploadImage struct {
+	FavID string `json:"paket_id"`
+	Image string `json:"image"`
 }

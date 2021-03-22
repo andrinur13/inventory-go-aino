@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Zurin/logrus"
+	"github.com/sirupsen/logrus"
 
 	_ "twc-ota-api/docs"
 )

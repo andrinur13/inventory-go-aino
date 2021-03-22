@@ -631,13 +631,13 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
 	}
 
-	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
+	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount, trip_planner.created_at,
 								agent_name,
 								COALESCE(tp_start_date::text, '') as tp_start_date, tp_agent_id,
 								COALESCE(tp_end_date::text, '') as tp_end_date,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
-								COALESCE(cast(tp_contact ->>'fullname' as text), '') as fullname,
+								COALESCE(cast(tp_contact ->>'idname' as text), '') as fullname,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
 								COALESCE(cast(tp_contact ->>'address' as text), '') as address`).Where("tp_agent_id = ?", token.Typeid).Joins("inner join master_agents on agent_id = tp_agent_id").Order("tp_invoice desc").Limit(limit).Offset(offset).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
@@ -648,12 +648,24 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 	var status string
 
 	for _, data := range trip {
+
+		createdat, _ := time.Parse(time.RFC3339, data.Created_at)
+		now := time.Now()
+
+		if data.Tp_status == 2 && now.After(createdat) {
+			data.Expired = true
+		} else {
+			data.Expired = false
+		}
+
 		if data.Tp_status == 1 {
-			status = "Draft"
-		} else if data.Tp_status == 2 {
-			status = "Purchase"
+			status = "Transaction Saved"
+		} else if data.Tp_status == 2 && data.Expired == false {
+			status = "Payment Pending"
 		} else if data.Tp_status == 3 {
-			status = "Paid"
+			status = "Payment Success"
+		} else if data.Tp_status == 2 && data.Expired == true {
+			status = "Expired at " + createdat.Format("2006-01-02")
 		} else {
 			status = "Unknown"
 		}
@@ -724,6 +736,8 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 			Tp_start_date:   data.Tp_start_date,
 			Tp_end_date:     data.Tp_end_date,
 			Tp_status:       data.Tp_status,
+			Expired:         data.Expired,
+			Created_at:      data.Created_at,
 			Tp_id:           data.Tp_id,
 			Status_name:     status,
 			Tp_total_amount: data.Tp_total_amount,

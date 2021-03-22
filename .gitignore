@@ -70,3 +70,4 @@ fabric.properties
 logs/*
 /vendor
 vendor/*
+twc-ota-api

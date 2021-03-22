@@ -38,6 +38,12 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		return nil, "99", "End date is required", false
 	}
 
+	if r.TransactionStatus == 1 || r.TransactionStatus == 2 {
+
+	} else {
+		return nil, "99", "Invalid transaction_value status", false
+	}
+
 	// var vis []requests.TrxVisit
 	// var totPay float32
 	var name, phone, email string
@@ -55,7 +61,7 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 		Tp_number:       bNumber,
 		Tp_src_type:     r.SourceType,
 		Tp_stan:         stan,
-		Tp_status:       2,
+		Tp_status:       r.TransactionStatus,
 		Tp_total_amount: 0,
 		Tp_user_id:      token.ID,
 		Tp_agent_id:     token.Typeid,

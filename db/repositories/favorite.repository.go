@@ -13,7 +13,7 @@ import (
 )
 
 // InsertFav : insert to table favorite
-func InsertFav(token *entities.Users, r *requests.FavReq) (map[string]interface{}, string, string, bool) {
+func InsertFav(favID uuid.UUID, token *entities.Users, r *requests.FavReq) (map[string]interface{}, string, string, bool) {
 	if len(r.Data) == 0 {
 		return nil, "99", "Favorite data is required", false
 	}
@@ -43,7 +43,7 @@ func InsertFav(token *entities.Users, r *requests.FavReq) (map[string]interface{
 	extras := `{"name":"` + r.Name + `", "image_url":"` + r.ImageURL + `", "duration":` + strconv.Itoa(r.Duration) + `, "adult":` + strconv.Itoa(r.Adult) + `, "child":` + strconv.Itoa(r.Child) + `, "nationality_id":` + strconv.Itoa(r.NationalityID) + `, "price_bruto":` + strconv.FormatFloat(r.Bruto, 'f', -1, 32) + `, "price_disc":` + strconv.FormatFloat(r.Disc, 'f', -1, 32) + `, "price_netto":` + strconv.FormatFloat(r.Netto, 'f', -1, 32) + `, "data":` + jData + `}`
 
 	fav := entities.Favorite{
-		Fav_id:      uuid.NewV4(),
+		Fav_id:      favID,
 		Fav_user_id: token.ID,
 		Fav_data:    extras,
 		Fav_created: time.Now().Format("2006-01-02 15:04:05"),
@@ -107,9 +107,17 @@ func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool
 			favData = append(favData, tmpFavData)
 		}
 
+		var image_url string
+
+		image_url = jParse.ImageURL
+
+		if image_url == "" {
+			image_url = "static/b2bm/package/default_package.jpg"
+		}
+
 		tmpResp := entities.FavResp{
 			Name:          jParse.Name,
-			ImageURL:      jParse.ImageURL,
+			ImageURL:      image_url,
 			Duration:      jParse.Duration,
 			NationalityID: jParse.NationalityID,
 			Adult:         jParse.Adult,
@@ -148,4 +156,16 @@ func DeleteFav(token *entities.Users, r *requests.FavDelete) (map[string]interfa
 	}
 
 	return nil, "00", "Success delete favorite", true
+}
+
+//StoreFavImage :
+func StoreFavImage(favID, imagePath string) error {
+	if e := db.DB[0].Exec(`
+		UPDATE public.favorite
+		SET fav_data = jsonb_set(fav_data, '{image_url}', '"`+imagePath+`"')
+		WHERE fav_id = ?;
+	`, favID).GetErrors(); len(e) > 0 {
+		return e[0]
+	}
+	return nil
 }

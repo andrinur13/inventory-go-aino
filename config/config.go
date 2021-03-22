@@ -9,9 +9,10 @@ import (
 
 // appConf : struct for attributes needed for application config
 type appConf struct {
-	ServerPort string
-	Env        string
-	GtHost     string
+	ServerPort     string
+	Env            string
+	GtHost         string
+	ImageDirectory string
 }
 
 // mailConf : struct for attributes needed for email config
@@ -67,6 +68,14 @@ func Init(env string) {
 			log.Fatal(err)
 		} else {
 			App.GtHost = string(gtHost)
+		}
+
+		var imageDirectory []byte
+		imageDirectory, _, _, err = jsonparser.Get(cfgBlob, "app", "image_directory")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			App.ImageDirectory = string(imageDirectory)
 		}
 
 		var mailHost []byte
