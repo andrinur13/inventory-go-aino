@@ -246,6 +246,7 @@ func RegisterAgent(c *gin.Context) {
 
 // GetTransaction : Get transaction data
 func GetTransaction(c *gin.Context) {
+	status := strings.ToUpper(c.Query("status"))
 	page, err := strconv.Atoi(c.Param("page"))
 	if err != nil {
 		c.JSON(http.StatusOK, builder.ApiResponse(false, "General Error, couldn't parse page", "99", nil))
@@ -264,7 +265,7 @@ func GetTransaction(c *gin.Context) {
 
 	userData := middleware.Decode(split[1])
 
-	data, code, msg, stat, totalData, totalPages, currentData := repositories.SelectTrip(userData, page, size)
+	data, code, msg, stat, totalData, totalPages, currentData := repositories.SelectTrip(userData, page, size, status)
 
 	out, _ := json.Marshal(data)
 
