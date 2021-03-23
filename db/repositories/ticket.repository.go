@@ -632,11 +632,11 @@ func SelectTrip(token *entities.Users, page int, size int, qstatus string) (*[]e
 		}
 	case TRXSTATUSPURCHASED:
 		{
-			statusCondition = " and (tp_status = 3 or (tp_status = 2 and created_at >= now()::date)) "
+			statusCondition = " and (tp_status = 3 or (tp_status = 2 and trip_planner.created_at >= now()::date)) "
 		}
 	case TRXSTATUSEXPIRED:
 		{
-			statusCondition = " and (tp_status = 2 and and created_at::date < now()::date)"
+			statusCondition = " and (tp_status = 2 and and trip_planner.created_at::date < now()::date)"
 		}
 	default:
 		{
