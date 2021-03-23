@@ -12,6 +12,10 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+const TRXSTATUSDRAFT string = "DRAFT"
+const TRXSTATUSPURCHASED string = "PURCHASED"
+const TRXSTATUSEXPIRED string = "EXPIRED"
+
 var qrPrefix = "AINO"
 var prefixLen = len(qrPrefix)
 var weekday = strings.ToUpper("%" + time.Now().Format("Mon") + "%")
@@ -619,7 +623,26 @@ func GetSite(token *entities.Users, nationality string, siteID string) (*entitie
 }
 
 //SelectTrip : select data trip
-func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList, string, string, bool, int, int, int) {
+func SelectTrip(token *entities.Users, page int, size int, qstatus string) (*[]entities.TrxList, string, string, bool, int, int, int) {
+	var statusCondition string
+	switch qstatus {
+	case TRXSTATUSDRAFT:
+		{
+			statusCondition = " and tp_status = 1 "
+		}
+	case TRXSTATUSPURCHASED:
+		{
+			statusCondition = " and (tp_status = 3 or (tp_status = 2 and created_at >= now()::date)) "
+		}
+	case TRXSTATUSEXPIRED:
+		{
+			statusCondition = " and (tp_status = 2 and and created_at::date < now()::date)"
+		}
+	default:
+		{
+			statusCondition = ""
+		}
+	}
 
 	var trip []entities.TripTrxModel
 	var counTrip []entities.TripModel
@@ -627,7 +650,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 	offset := (page - 1) * size
 	limit := size
 
-	if err := db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?", token.Typeid).Find(&counTrip).Error; gorm.IsRecordNotFoundError(err) {
+	if err := db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Find(&counTrip).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
 	}
 
@@ -640,7 +663,7 @@ func SelectTrip(token *entities.Users, page int, size int) (*[]entities.TrxList,
 								COALESCE(cast(tp_contact ->>'idname' as text), '') as fullname,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
-								COALESCE(cast(tp_contact ->>'address' as text), '') as address`).Where("tp_agent_id = ?", token.Typeid).Joins("inner join master_agents on agent_id = tp_agent_id").Order("tp_invoice desc").Limit(limit).Offset(offset).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
+								COALESCE(cast(tp_contact ->>'address' as text), '') as address`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Joins("inner join master_agents on agent_id = tp_agent_id").Order("tp_invoice desc").Limit(limit).Offset(offset).Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
 	}
 
