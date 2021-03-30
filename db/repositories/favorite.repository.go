@@ -40,7 +40,7 @@ func InsertFav(favID uuid.UUID, token *entities.Users, r *requests.FavReq) (map[
 
 	jData := string(rData)
 
-	extras := `{"name":"` + r.Name + `", "image_url":"` + r.ImageURL + `", "duration":` + strconv.Itoa(r.Duration) + `, "adult":` + strconv.Itoa(r.Adult) + `, "child":` + strconv.Itoa(r.Child) + `, "nationality_id":` + strconv.Itoa(r.NationalityID) + `, "price_bruto":` + strconv.FormatFloat(r.Bruto, 'f', -1, 32) + `, "price_disc":` + strconv.FormatFloat(r.Disc, 'f', -1, 32) + `, "price_netto":` + strconv.FormatFloat(r.Netto, 'f', -1, 32) + `, "data":` + jData + `}`
+	extras := `{"name":"` + r.Name + `", "image_url":"` + r.ImageURL + `", "destination_qty":` + strconv.Itoa(r.DestinationQty) + `, "duration":` + strconv.Itoa(r.Duration) + `, "adult":` + strconv.Itoa(r.Adult) + `, "child":` + strconv.Itoa(r.Child) + `, "nationality_id":` + strconv.Itoa(r.NationalityID) + `, "price_bruto":` + strconv.FormatFloat(r.Bruto, 'f', -1, 32) + `, "price_disc":` + strconv.FormatFloat(r.Disc, 'f', -1, 32) + `, "price_netto":` + strconv.FormatFloat(r.Netto, 'f', -1, 32) + `, "data":` + jData + `}`
 
 	fav := entities.Favorite{
 		Fav_id:      favID,
@@ -116,17 +116,18 @@ func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool
 		}
 
 		tmpResp := entities.FavResp{
-			Name:          jParse.Name,
-			ImageURL:      image_url,
-			Duration:      jParse.Duration,
-			NationalityID: jParse.NationalityID,
-			Adult:         jParse.Adult,
-			Child:         jParse.Child,
-			Bruto:         jParse.Bruto,
-			Netto:         jParse.Netto,
-			Disc:          jParse.Disc,
-			Data:          favData,
-			PaketID:       data.Fav_id,
+			Name:           jParse.Name,
+			ImageURL:       image_url,
+			Duration:       jParse.Duration,
+			DestinationQty: jParse.DestinationQty,
+			NationalityID:  jParse.NationalityID,
+			Adult:          jParse.Adult,
+			Child:          jParse.Child,
+			Bruto:          jParse.Bruto,
+			Netto:          jParse.Netto,
+			Disc:           jParse.Disc,
+			Data:           favData,
+			PaketID:        data.Fav_id,
 		}
 
 		resp = append(resp, tmpResp)
