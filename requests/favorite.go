@@ -1,17 +1,18 @@
 package requests
 
 type FavReq struct {
-	Name          string    `json:"name"`
-	Image         string    `json:"image"`
-	ImageURL      string    `json:"image_url"`
-	Duration      int       `json:"duration"`
-	Adult         int       `json:"adult"`
-	Child         int       `json:"child"`
-	NationalityID int       `json:"nationality_id"`
-	Bruto         float64   `json:"price_bruto"`
-	Netto         float64   `json:"price_netto"`
-	Disc          float64   `json:"price_disc"`
-	Data          []FavData `json:"data"`
+	Name           string    `json:"name"`
+	Image          string    `json:"image"`
+	ImageURL       string    `json:"image_url"`
+	DestinationQty int       `json:"destination_qty"`
+	Duration       int       `json:"duration"`
+	Adult          int       `json:"adult"`
+	Child          int       `json:"child"`
+	NationalityID  int       `json:"nationality_id"`
+	Bruto          float64   `json:"price_bruto"`
+	Netto          float64   `json:"price_netto"`
+	Disc           float64   `json:"price_disc"`
+	Data           []FavData `json:"data"`
 }
 
 type FavData struct {
