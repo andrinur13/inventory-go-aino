@@ -7,21 +7,21 @@
   "email": {
     "host":"smtp.gmail.com",
     "port": 587,
-    "email": "tamanwisatacandicoba@gmail.com",
-    "username": "tamanwisatacandicoba@gmail.com",
-    "password": "tamanwisata123"
+    "email": "ticket-noreply@borobudurpark.co.id",
+    "username": "ticket-noreply@borobudurpark.co.id",
+    "password": "noreply202"
   },
   "databases":[
     {
       "name": "db_trx_twc",
       "driver_name":"postgres",
-      "connection_string":"postgres://engine_ticket:2Du9te3QxrZ9y3Bq@localhost:5432/db_trx_twc?sslmode=disable&application_name=TICKETING-OTA-TWC",
+      "connection_string":"postgres://engine_ticket:2Du9te3QxrZ9y3Bq@127.0.0.1:5432/db_trx_twc?sslmode=disable&application_name=TICKETING-OTA-TWC",
       "max_connection_open":20
     },
     {
       "name": "db_master_twc",
       "driver_name":"postgres",
-      "connection_string":"postgres://pds_twc:vn6LL68A8AsbmeEj@localhost:5432/db_master_twc?sslmode=disable&application_name=TICKETING-OTA-TWC",
+      "connection_string":"postgres://pds_twc:vn6LL68A8AsbmeEj@127.0.0.1:5432/db_master_twc?sslmode=disable&application_name=TICKETING-OTA-TWC",
       "max_connection_open":20
     }
   ]

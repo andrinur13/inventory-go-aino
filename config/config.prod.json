@@ -1,4 +1,4 @@
-{
+
   "app":{
     "serverport":"13003",
     "svd_host": "https://api.svd.apps.ainosi.com/",
