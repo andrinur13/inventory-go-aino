@@ -93,12 +93,22 @@ func GetPrice(token *entities.Users, r *entities.GetPriceReq) (*entities.GetPric
 				dDStatus = false
 			}
 
+			// query lama
+			// if err := db.DB[1].Select(`discm_value`).Where(`discm_type = 'AGENT'
+			// 						and ? >= discm_start_date
+			// 						and ? <= discm_end_date 
+			// 						and discm_destination = ?
+			// 						and discm_group_agent_id = ?
+			// 						and deleted_at is NULL`, visit.VisitDate, visit.VisitDate, r.DestQty, agent.Agent_group_id).Last(&dA).Error; gorm.IsRecordNotFoundError(err) {
+			// 	dAStatus = false
+			// }
+
+			// hapus where discm_destination
 			if err := db.DB[1].Select(`discm_value`).Where(`discm_type = 'AGENT'
 									and ? >= discm_start_date
 									and ? <= discm_end_date 
-									and discm_destination = ?
 									and discm_group_agent_id = ?
-									and deleted_at is NULL`, visit.VisitDate, visit.VisitDate, r.DestQty, agent.Agent_group_id).Last(&dA).Error; gorm.IsRecordNotFoundError(err) {
+									and deleted_at is NULL`, visit.VisitDate, visit.VisitDate, agent.Agent_group_id).Last(&dA).Error; gorm.IsRecordNotFoundError(err) {
 				dAStatus = false
 			}
 
