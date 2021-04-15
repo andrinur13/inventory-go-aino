@@ -787,3 +787,37 @@ func SelectTrip(token *entities.Users, page int, size int, qstatus string) (*[]e
 
 	return &resp, "01", "Success get trx data", true, totalData, totalPages, currentData
 }
+
+//Get App Config
+func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, string, bool) {
+	
+	var mconfigs []entities.MconfigValue
+
+	if err := db.DB[0].Select(`mconfig_id, mconfig_src_type,
+								mconfig_value ->> 'cs_phone_no' as cs_phone_no,
+								mconfig_value ->> 'cs_fax_no' as cs_fax_no,
+								mconfig_value ->> 'cs_wa_no' as cs_wa_no,
+								mconfig_value ->> 'cs_email' as cs_email`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "02", "App config not found (" + err.Error() + ")", false
+	}
+
+	if len(mconfigs) == 0 {
+		return nil, "70", "App config not found", false
+	}
+
+	var dataMconfig []entities.MconfigValue
+
+	for _, mconfig := range mconfigs {
+
+		tmpMconfigValue := entities.MconfigValue{
+			CsPhoneNo:      mconfig.CsPhoneNo,
+			CsFaxNo: 		mconfig.CsFaxNo,
+			CsWaNo:    		mconfig.CsWaNo,
+			CsEmail:    	mconfig.CsEmail,
+		}
+
+		dataMconfig = append(dataMconfig, tmpMconfigValue)
+	}
+
+	return &dataMconfig, "01", "Success get app config", true
+}
