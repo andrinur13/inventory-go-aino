@@ -797,7 +797,9 @@ func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, stri
 								mconfig_value ->> 'cs_phone_no' as cs_phone_no,
 								mconfig_value ->> 'cs_fax_no' as cs_fax_no,
 								mconfig_value ->> 'cs_wa_no' as cs_wa_no,
-								mconfig_value ->> 'cs_email' as cs_email`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error; gorm.IsRecordNotFoundError(err) {
+								mconfig_value ->> 'cs_email' as cs_email,
+								mconfig_value ->> 'privacy_policy' as privacy_policy,
+								mconfig_value ->> 'term_condition' as term_condition`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "App config not found (" + err.Error() + ")", false
 	}
 
@@ -814,6 +816,8 @@ func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, stri
 			CsFaxNo: 		mconfig.CsFaxNo,
 			CsWaNo:    		mconfig.CsWaNo,
 			CsEmail:    	mconfig.CsEmail,
+			PrivacyPolicy:  mconfig.PrivacyPolicy,
+			TermCondition:  mconfig.TermCondition,
 		}
 
 		dataMconfig = append(dataMconfig, tmpMconfigValue)

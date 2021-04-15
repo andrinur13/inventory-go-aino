@@ -17,10 +17,12 @@ func (MconfigModel) TableName() string {
 }
 
 type MconfigValue struct {
-	CsPhoneNo  string `json:"cs_phone_no"`
-	CsFaxNo    string `json:"cs_fax_no"`
-	CsWaNo     string `json:"cs_wa_no"`
-	CsEmail    string `json:"cs_email"`
+	CsPhoneNo  		string `json:"cs_phone_no"`
+	CsFaxNo    		string `json:"cs_fax_no"`
+	CsWaNo     		string `json:"cs_wa_no"`
+	CsEmail    		string `json:"cs_email"`
+	PrivacyPolicy   string `json:"privacy_policy"`
+	TermCondition   string `json:"term_condition"`
 }
 
 func (MconfigValue) TableName() string {
