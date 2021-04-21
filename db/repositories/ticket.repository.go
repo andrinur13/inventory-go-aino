@@ -837,7 +837,8 @@ func GetSiteExtras(token *entities.Users, language string, siteName string) (*[]
 		return nil, "81", "lang and site parameter can't be empty.", false
 	}
 
-	sitenew := strings.ReplaceAll(siteName, ", ", "','")
+	// sitenew := strings.ReplaceAll(siteName, ", ", "','")
+	sitenew := strings.Replace(siteName, ", ", "','", -1)
 	// parts := strings.Split(siteName, ", ")
 	
 
