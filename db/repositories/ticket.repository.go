@@ -825,3 +825,67 @@ func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, stri
 
 	return &dataMconfig, "01", "Success get app config", true
 }
+
+//Get Site Extras
+func GetSiteExtras(token *entities.Users, language string, siteName string) (*[]entities.SiteExtras, string, string, bool){
+
+	if siteName == "" {
+		return nil, "81", "lang and site parameter can't be empty.", false
+	}
+
+	if language == "" {
+		return nil, "81", "lang and site parameter can't be empty.", false
+	}
+
+	sitenew := strings.ReplaceAll(siteName, ", ", "','")
+	// parts := strings.Split(siteName, ", ")
+	
+
+	var siteextras []entities.SiteExtras
+
+	if language == "id"{
+		// if err := db.DB[1].Select(`group_id, group_mid, group_name,
+		// 						group_extras -> 'adult_age' ->> 'id' as adult_age,
+		// 						group_extras -> 'child_age' ->> 'id' as child_age,
+		// 						group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN (?" + strings.Repeat(",?", len(parts)-1) + ")", parts[0], parts[1]).Find(&siteextras).Error; gorm.IsRecordNotFoundError(err) {
+		// return nil, "80", "Site config not found (" + err.Error() + ")", false
+		// }
+		if err := db.DB[1].Select(`group_id, group_mid, group_name,
+								group_extras -> 'adult_age' ->> 'id' as adult_age,
+								group_extras -> 'child_age' ->> 'id' as child_age,
+								group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "80", "Site config not found (" + err.Error() + ")", false
+		}
+	}
+
+	if language == "en"{
+		if err := db.DB[1].Select(`group_id, group_mid, group_name,
+								group_extras -> 'adult_age' ->> 'en' as adult_age,
+								group_extras -> 'child_age' ->> 'en' as child_age,
+								group_extras -> 'how_to_use_ticket' ->> 'en' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error; gorm.IsRecordNotFoundError(err) {
+		return nil, "80", "Site config not found (" + err.Error() + ")", false
+		}
+	}
+
+	if len(siteextras) == 0 {
+		return nil, "80", "Site config not found", false
+	}
+
+	var dataSiteExtras []entities.SiteExtras
+
+	for _, siteex := range siteextras {
+
+		tmpSiteExtras := entities.SiteExtras{
+			Group_id:      		siteex.Group_id,
+			Group_mid: 			siteex.Group_mid,
+			Group_name:    		siteex.Group_name,
+			Adult_age:    		siteex.Adult_age,
+			Child_age:  		siteex.Child_age,
+			How_to_use_ticket:  siteex.How_to_use_ticket,
+		}
+
+		dataSiteExtras = append(dataSiteExtras, tmpSiteExtras)
+	}
+
+	return &dataSiteExtras, "01", "Success get site extras.", true
+}
