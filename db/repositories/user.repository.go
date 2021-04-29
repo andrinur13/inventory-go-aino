@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"strconv"
+	"fmt"
+	"reflect"
 	"time"
 	"twc-ota-api/config"
 	"twc-ota-api/db"
@@ -29,6 +31,23 @@ func GetUser(r interface{}) (map[string]interface{}, string, string, bool) {
 
 	if email == nil || password == nil {
 		return nil, "99", "Email or password cant't be empty", false
+	}
+
+	//If Connection Refused
+	if err := db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", email).Find(&user).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", email).Find(&user).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
 	}
 
 	if err := db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", email).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
@@ -73,6 +92,24 @@ func InsertUser(r entities.UserReq) (map[string]interface{}, string, string, boo
 	}
 
 	var user []entities.Users
+
+	//If Connection refused
+	if erro := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+		fmt.Printf("%v \n", erro.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(erro).String())
+			for i := 0; i<4; i++ {
+				erro = db.DB[1].Where("email = ?", r.Email).Find(&user).Error;
+				if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, erro)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
 
 	db.DB[1].Where("email = ?", r.Email).Find(&user)
 
@@ -141,6 +178,24 @@ func UpdatePassword(token *entities.Users, r *requests.UpdatePassword) (map[stri
 		return nil, "02", "Confirmation password doesn't match", false
 	}
 
+	//If Connection refused
+	if err := db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
 	if err := db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "03", "User not found (" + err.Error() + ")", false
 	}
@@ -180,6 +235,24 @@ func ResetPassword(r *requests.ResetPassword) (map[string]interface{}, string, s
 
 	var user entities.Users
 	var passRes entities.PasswordReset
+
+	//If Connection refused
+	if err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[1].Where("email = ?", r.Email).Find(&user).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
 
 	if err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "E-mail not registered! (" + err.Error() + ")", false
@@ -304,6 +377,24 @@ func UpdateResetPassword(r *requests.UpdateResetPassword) (map[string]interface{
 
 	var user entities.Users
 	var rst entities.PasswordReset
+
+	//If Connection refused
+	if err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[1].Where("email = ?", r.Email).Find(&user).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
 
 	if err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "03", "E-mail not registered! (" + err.Error() + ")", false

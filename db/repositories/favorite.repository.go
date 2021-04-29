@@ -3,6 +3,8 @@ package repositories
 import (
 	"encoding/json"
 	"strconv"
+	"fmt"
+	"reflect"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
@@ -51,6 +53,24 @@ func InsertFav(favID uuid.UUID, token *entities.Users, r *requests.FavReq) (map[
 
 	db.DB[0].NewRecord(fav)
 
+	//If Connection refused
+	if err := db.DB[0].Create(&fav).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Create(&fav).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
 	if err := db.DB[0].Create(&fav).Error; err != nil {
 		return nil, "01", "Error when inserting favorite data (" + err.Error() + ")", false
 	}
@@ -61,6 +81,24 @@ func InsertFav(favID uuid.UUID, token *entities.Users, r *requests.FavReq) (map[
 // SelectFav : select from table favorite
 func SelectFav(token *entities.Users) (*[]entities.FavResp, string, string, bool) {
 	var fav []entities.Favorite
+
+	//If Connection refused
+	if err := db.DB[0].Select("fav_id, fav_data").Where("fav_deleted is null and fav_user_id = ?", token.ID).Order("fav_created desc").Find(&fav).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Select("fav_id, fav_data").Where("fav_deleted is null and fav_user_id = ?", token.ID).Order("fav_created desc").Find(&fav).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
 
 	if err := db.DB[0].Select("fav_id, fav_data").Where("fav_deleted is null and fav_user_id = ?", token.ID).Order("fav_created desc").Find(&fav).Error; err != nil {
 		return nil, "01", err.Error(), false
@@ -143,6 +181,24 @@ func DeleteFav(token *entities.Users, r *requests.FavDelete) (map[string]interfa
 	}
 
 	var fav entities.Favorite
+
+	//If Connection refused
+	if err := db.DB[0].Select(`fav_user_id`).Where("fav_deleted is null and fav_id = ?", r.FavID).Find(&fav).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Select(`fav_user_id`).Where("fav_deleted is null and fav_id = ?", r.FavID).Find(&fav).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
 
 	if err := db.DB[0].Select(`fav_user_id`).Where("fav_deleted is null and fav_id = ?", r.FavID).Find(&fav).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "02", err.Error(), false

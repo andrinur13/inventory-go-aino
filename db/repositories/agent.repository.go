@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"encoding/json"
+	"fmt"
+	"reflect"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
@@ -52,6 +54,35 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 //GetAgent : select data agent
 func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, string, bool) {
 	var agents []entities.AgentModel
+
+	//If Connection Refused
+	if err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
+								agent_extras ->> 'agent_address_detail' as agent_address_detail,
+								agent_extras ->> 'telp' as telp,
+								agent_extras ->> 'no_id' as no_id,
+								agent_extras ->> 'email' as email,
+								agent_extras ->> 'npwp' as npwp,
+								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+			for i := 0; i<4; i++ {
+				err = db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
+								agent_extras ->> 'agent_address_detail' as agent_address_detail,
+								agent_extras ->> 'telp' as telp,
+								agent_extras ->> 'no_id' as no_id,
+								agent_extras ->> 'email' as email,
+								agent_extras ->> 'npwp' as npwp,
+								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
 
 	if err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
 								agent_extras ->> 'agent_address_detail' as agent_address_detail,
@@ -148,6 +179,24 @@ func UpdateProfileAgent(token *entities.Users, r *entities.AgentReq) (map[string
 	}
 
 	var checkAgent []entities.AgentModel
+
+	//If Connection refused
+	if erro := db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent).Error; (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+		fmt.Printf("%v \n", erro.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(erro).String())
+			for i := 0; i<4; i++ {
+				erro = db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent).Error;
+				if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, erro)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
 
 	db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent)
 
