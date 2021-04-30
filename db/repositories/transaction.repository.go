@@ -71,23 +71,23 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 
 	db.DB[0].NewRecord(tripPlanner)
 
-	//If Connection refused
-	if err := db.DB[0].Create(&tripPlanner).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
-		fmt.Printf("%v \n", err.Error())
-		fmt.Printf("%v \n", reflect.TypeOf(err).String())
-			for i := 0; i<4; i++ {
-				err = db.DB[0].Create(&tripPlanner).Error;
-				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
-					fmt.Printf("Hitback(%d)%v \n", i, err)
-					time.Sleep(3 * time.Second)
-					continue
-				}
-				break
-			}
-		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
-			return nil, "502", "Connection has a problem", false
-		}
-	}
+	// If Connection refused
+	// if err := db.DB[0].Create(&tripPlanner).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+	// 	fmt.Printf("%v \n", err.Error())
+	// 	fmt.Printf("%v \n", reflect.TypeOf(err).String())
+	// 		for i := 0; i<4; i++ {
+	// 			err = db.DB[0].Create(&tripPlanner).Error;
+	// 			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+	// 				fmt.Printf("Hitback(%d)%v \n", i, err)
+	// 				time.Sleep(3 * time.Second)
+	// 				continue
+	// 			}
+	// 			break
+	// 		}
+	// 	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+	// 		return nil, "502", "Connection has a problem", false
+	// 	}
+	// }
 
 	if err := db.DB[0].Create(&tripPlanner).Error; err != nil {
 		return nil, "02", "Error when inserting trip planner data (" + err.Error() + ")", false
