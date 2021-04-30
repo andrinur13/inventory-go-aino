@@ -56,8 +56,10 @@ func GetPrice(token *entities.Users, r *entities.GetPriceReq) (*entities.GetPric
 
 	var agent entities.AgentModel
 
+	err := db.DB[1].Select(`agent_group_id`).Where("agent_id = ?", token.Typeid).Find(&agent).Error;
+
 	//If Connection refused
-	if err := db.DB[1].Select(`agent_group_id`).Where("agent_id = ?", token.Typeid).Find(&agent).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 			for i := 0; i<4; i++ {
 				err = db.DB[1].Select(`agent_group_id`).Where("agent_id = ?", token.Typeid).Find(&agent).Error;
@@ -73,7 +75,7 @@ func GetPrice(token *entities.Users, r *entities.GetPriceReq) (*entities.GetPric
 		}
 	}
 
-	if err := db.DB[1].Select(`agent_group_id`).Where("agent_id = ?", token.Typeid).Find(&agent).Error; gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Agent not found (" + err.Error() + ")", false
 	}
 

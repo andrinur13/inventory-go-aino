@@ -33,25 +33,27 @@ func GetUser(r interface{}) (map[string]interface{}, string, string, bool) {
 		return nil, "99", "Email or password cant't be empty", false
 	}
 
+	erro := db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", email).Find(&user).Error;
+
 	//If Connection Refused
-	if err := db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", email).Find(&user).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
-		fmt.Printf("%v \n", err.Error())
+	if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+		fmt.Printf("%v \n", erro.Error())
 			for i := 0; i<4; i++ {
-				err = db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", email).Find(&user).Error;
-				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
-					fmt.Printf("Hitback(%d)%v \n", i, err)
+				erro = db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", email).Find(&user).Error;
+				if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+					fmt.Printf("Hitback(%d)%v \n", i, erro)
 					time.Sleep(3 * time.Second)
 					continue
 				}
 				break
 			}
-		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
 			return nil, "502", "Connection has a problem", false
 		}
 	}
 
-	if err := db.DB[0].Where("email = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", email).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
-		return nil, "02", "Email not registered (" + err.Error() + ")", false
+	if gorm.IsRecordNotFoundError(erro) {
+		return nil, "02", "Email not registered (" + erro.Error() + ")", false
 	}
 
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password.(string)))
@@ -93,8 +95,10 @@ func InsertUser(r entities.UserReq) (map[string]interface{}, string, string, boo
 
 	var user []entities.Users
 
+	erro := db.DB[1].Where("email = ?", r.Email).Find(&user).Error;
+
 	//If Connection refused
-	if erro := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+	if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
 		fmt.Printf("%v \n", erro.Error())
 		fmt.Printf("%v \n", reflect.TypeOf(erro).String())
 			for i := 0; i<4; i++ {
@@ -111,7 +115,7 @@ func InsertUser(r entities.UserReq) (map[string]interface{}, string, string, boo
 		}
 	}
 
-	db.DB[1].Where("email = ?", r.Email).Find(&user)
+	// db.DB[1].Where("email = ?", r.Email).Find(&user)
 
 	if len(user) > 0 {
 		return nil, "02", "E-mail already registered", false
@@ -178,26 +182,28 @@ func UpdatePassword(token *entities.Users, r *requests.UpdatePassword) (map[stri
 		return nil, "02", "Confirmation password doesn't match", false
 	}
 
+	erro := db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error;
+
 	//If Connection refused
-	if err := db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
-		fmt.Printf("%v \n", err.Error())
-		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+	if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+		fmt.Printf("%v \n", erro.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(erro).String())
 			for i := 0; i<4; i++ {
-				err = db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error;
-				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
-					fmt.Printf("Hitback(%d)%v \n", i, err)
+				erro = db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error;
+				if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, erro)
 					time.Sleep(3 * time.Second)
 					continue
 				}
 				break
 			}
-		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
 			return nil, "502", "Connection has a problem", false
 		}
 	}
 
-	if err := db.DB[0].Where("id = ? AND (type = 'AT' OR type = 'TRPPLNR' or type = 'B2B')", token.ID).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
-		return nil, "03", "User not found (" + err.Error() + ")", false
+	if gorm.IsRecordNotFoundError(erro) {
+		return nil, "03", "User not found (" + erro.Error() + ")", false
 	}
 
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(r.OldPwd))
@@ -236,26 +242,28 @@ func ResetPassword(r *requests.ResetPassword) (map[string]interface{}, string, s
 	var user entities.Users
 	var passRes entities.PasswordReset
 
+	erro := db.DB[1].Where("email = ?", r.Email).Find(&user).Error;
+
 	//If Connection refused
-	if err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
-		fmt.Printf("%v \n", err.Error())
-		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+	if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+		fmt.Printf("%v \n", erro.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(erro).String())
 			for i := 0; i<4; i++ {
-				err = db.DB[1].Where("email = ?", r.Email).Find(&user).Error;
-				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
-					fmt.Printf("Hitback(%d)%v \n", i, err)
+				erro = db.DB[1].Where("email = ?", r.Email).Find(&user).Error;
+				if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, erro)
 					time.Sleep(3 * time.Second)
 					continue
 				}
 				break
 			}
-		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
 			return nil, "502", "Connection has a problem", false
 		}
 	}
 
-	if err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
-		return nil, "02", "E-mail not registered! (" + err.Error() + ")", false
+	if gorm.IsRecordNotFoundError(erro) {
+		return nil, "02", "E-mail not registered! (" + erro.Error() + ")", false
 	}
 
 	db.DB[1].Where("email = ?", r.Email).Delete(&passRes)
@@ -378,8 +386,10 @@ func UpdateResetPassword(r *requests.UpdateResetPassword) (map[string]interface{
 	var user entities.Users
 	var rst entities.PasswordReset
 
+	err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error;
+
 	//If Connection refused
-	if err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 		fmt.Printf("%v \n", reflect.TypeOf(err).String())
 			for i := 0; i<4; i++ {
@@ -396,7 +406,7 @@ func UpdateResetPassword(r *requests.UpdateResetPassword) (map[string]interface{
 		}
 	}
 
-	if err := db.DB[1].Where("email = ?", r.Email).Find(&user).Error; gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "03", "E-mail not registered! (" + err.Error() + ")", false
 	}
 

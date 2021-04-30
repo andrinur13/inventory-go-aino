@@ -71,25 +71,27 @@ func InsertTrx(token *entities.Users, r *requests.TrxReq) (*requests.TrxResp, st
 
 	db.DB[0].NewRecord(tripPlanner)
 
-	// If Connection refused
-	// if err := db.DB[0].Create(&tripPlanner).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
-	// 	fmt.Printf("%v \n", err.Error())
-	// 	fmt.Printf("%v \n", reflect.TypeOf(err).String())
-	// 		for i := 0; i<4; i++ {
-	// 			err = db.DB[0].Create(&tripPlanner).Error;
-	// 			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
-	// 				fmt.Printf("Hitback(%d)%v \n", i, err)
-	// 				time.Sleep(3 * time.Second)
-	// 				continue
-	// 			}
-	// 			break
-	// 		}
-	// 	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
-	// 		return nil, "502", "Connection has a problem", false
-	// 	}
-	// }
+	err := db.DB[0].Create(&tripPlanner).Error;
 
-	if err := db.DB[0].Create(&tripPlanner).Error; err != nil {
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Create(&tripPlanner).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
+	if err != nil {
 		return nil, "02", "Error when inserting trip planner data (" + err.Error() + ")", false
 	}
 
@@ -321,8 +323,10 @@ func updateTableTrx(inv string, status int, paymentMethod string) (bool, string)
 	var trp entities.TrpTrxModel
 
 	if paymentMethod == "" {
+		err := db.DB[0].Model(&trp).Where("tp_number = ?", inv).Updates(map[string]interface{}{"tp_status": status, "updated_at": time.Now().Format("2006-01-02 15:04:05")}).Error;
+
 		//If Connection refused
-		if err := db.DB[0].Model(&trp).Where("tp_number = ?", inv).Updates(map[string]interface{}{"tp_status": status, "updated_at": time.Now().Format("2006-01-02 15:04:05")}).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 			fmt.Printf("%v \n", err.Error())
 			fmt.Printf("%v \n", reflect.TypeOf(err).String())
 				for i := 0; i<4; i++ {
@@ -339,12 +343,14 @@ func updateTableTrx(inv string, status int, paymentMethod string) (bool, string)
 			}
 		}
 
-		if err := db.DB[0].Model(&trp).Where("tp_number = ?", inv).Updates(map[string]interface{}{"tp_status": status, "updated_at": time.Now().Format("2006-01-02 15:04:05")}).Error; err != nil {
+		if err != nil {
 			return false, err.Error()
 		}
 	} else {
+		err := db.DB[0].Model(&trp).Where("tp_number = ?", inv).Updates(map[string]interface{}{"tp_status": status, "tp_payment_method": paymentMethod, "updated_at": time.Now().Format("2006-01-02 15:04:05")}).Error;
+
 		//If Connection refused
-		if err := db.DB[0].Model(&trp).Where("tp_number = ?", inv).Updates(map[string]interface{}{"tp_status": status, "tp_payment_method": paymentMethod, "updated_at": time.Now().Format("2006-01-02 15:04:05")}).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 			fmt.Printf("%v \n", err.Error())
 			fmt.Printf("%v \n", reflect.TypeOf(err).String())
 				for i := 0; i<4; i++ {
@@ -361,7 +367,7 @@ func updateTableTrx(inv string, status int, paymentMethod string) (bool, string)
 			}
 		}
 
-		if err := db.DB[0].Model(&trp).Where("tp_number = ?", inv).Updates(map[string]interface{}{"tp_status": status, "tp_payment_method": paymentMethod, "updated_at": time.Now().Format("2006-01-02 15:04:05")}).Error; err != nil {
+		if err != nil {
 			return false, err.Error()
 		}
 	}
@@ -377,8 +383,7 @@ func GetQR(token *entities.Users, r *requests.TrxQReq) (*entities.TrxList, strin
 
 	var trip entities.TripTrxModel
 
-	//If Connection refused
-	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
+	err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
 								agent_name,
 								COALESCE(tp_start_date::text, '') as tp_start_date, tp_agent_id,
 								COALESCE(tp_end_date::text, '') as tp_end_date,
@@ -387,7 +392,10 @@ func GetQR(token *entities.Users, r *requests.TrxQReq) (*entities.TrxList, strin
 								coalesce(cast(tp_contact ->>'idname' as text), '') as fullname,
 								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
 								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
-								COALESCE(cast(tp_contact ->>'region' as text), '') as address`).Where("tp_agent_id = ? and tp_number = ?", token.Typeid, r.Inv).Joins("inner join master_agents on agent_id = tp_agent_id").Find(&trip).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+								COALESCE(cast(tp_contact ->>'region' as text), '') as address`).Where("tp_agent_id = ? and tp_number = ?", token.Typeid, r.Inv).Joins("inner join master_agents on agent_id = tp_agent_id").Find(&trip).Error;
+
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 			for i := 0; i<4; i++ {
 				err = db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
@@ -412,16 +420,7 @@ func GetQR(token *entities.Users, r *requests.TrxQReq) (*entities.TrxList, strin
 		}
 	}
 
-	if err := db.DB[0].Select(`tp_id, tp_status, tp_invoice, tp_number, tp_duration, tp_total_amount,
-								agent_name,
-								COALESCE(tp_start_date::text, '') as tp_start_date, tp_agent_id,
-								COALESCE(tp_end_date::text, '') as tp_end_date,
-								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
-								COALESCE(cast(tp_contact ->>'title' as text), '') as title,
-								coalesce(cast(tp_contact ->>'idname' as text), '') as fullname,
-								COALESCE(cast(tp_contact ->>'email' as text), '') as email,
-								COALESCE(cast(tp_contact ->>'phone' as text), '') as phone,
-								COALESCE(cast(tp_contact ->>'region' as text), '') as address`).Where("tp_agent_id = ? and tp_number = ?", token.Typeid, r.Inv).Joins("inner join master_agents on agent_id = tp_agent_id").Find(&trip).Error; gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false
 	}
 

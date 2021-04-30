@@ -55,14 +55,16 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, string, bool) {
 	var agents []entities.AgentModel
 
-	//If Connection Refused
-	if err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
+	err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
 								agent_extras ->> 'agent_address_detail' as agent_address_detail,
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
 								agent_extras ->> 'email' as email,
 								agent_extras ->> 'npwp' as npwp,
-								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error;
+
+	//If Connection Refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 			for i := 0; i<4; i++ {
 				err = db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
@@ -84,13 +86,7 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 		}
 	}
 
-	if err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
-								agent_extras ->> 'agent_address_detail' as agent_address_detail,
-								agent_extras ->> 'telp' as telp,
-								agent_extras ->> 'no_id' as no_id,
-								agent_extras ->> 'email' as email,
-								agent_extras ->> 'npwp' as npwp,
-								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "No agent data found (" + err.Error() + ")", false
 	}
 
@@ -180,8 +176,10 @@ func UpdateProfileAgent(token *entities.Users, r *entities.AgentReq) (map[string
 
 	var checkAgent []entities.AgentModel
 
-	//If Connection refused
-	if erro := db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent).Error; (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+	erro := db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent).Error;
+
+	//If Connection refused not yet
+	if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
 		fmt.Printf("%v \n", erro.Error())
 		fmt.Printf("%v \n", reflect.TypeOf(erro).String())
 			for i := 0; i<4; i++ {
@@ -197,8 +195,6 @@ func UpdateProfileAgent(token *entities.Users, r *entities.AgentReq) (map[string
 			return nil, "502", "Connection has a problem", false
 		}
 	}
-
-	db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent)
 
 	return nil, "01", "Agent successfully updated", true
 }

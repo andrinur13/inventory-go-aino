@@ -123,8 +123,10 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 
 	var cluster []entities.GrupModel
 
+	err := db.DB[1].Select("*, coalesce(cast(group_extras ->> 'detail' as text), '') as description").Where("depth = 2 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL").Find(&cluster).Error;
+
 	//If Connection refused
-	if err := db.DB[1].Select("*, coalesce(cast(group_extras ->> 'detail' as text), '') as description").Where("depth = 2 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL").Find(&cluster).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 			for i := 0; i<4; i++ {
 				err = db.DB[1].Select("*, coalesce(cast(group_extras ->> 'detail' as text), '') as description").Where("depth = 2 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL").Find(&cluster).Error;
@@ -140,7 +142,7 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 		}
 	}
 
-	if err := db.DB[1].Select("*, coalesce(cast(group_extras ->> 'detail' as text), '') as description").Where("depth = 2 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL").Find(&cluster).Error; gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Cluster not found (" + err.Error() + ")", false
 	}
 
@@ -402,15 +404,17 @@ func GetSite(token *entities.Users, nationality string, siteID string) (*entitie
 
 	var site entities.GroupSiteModel
 
-	//If Connection Refused
-	if err := db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
+	err := db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
 								coalesce(cast(group_extras ->> 'open' as text), '') as "open",
 								coalesce(cast(group_extras ->> 'close' as text), '') as "close",
 								coalesce(cast(group_extras ->> 'estimate' as text), '') as estimate,
 								coalesce(cast(group_extras ->> 'detail' as text), '') as detail,
 								coalesce(cast(group_extras ->> 'address' as text), '') as address,
 								coalesce(cast(group_extras ->> 'latitude' as text), '') as lat,
-								coalesce(cast(group_extras ->> 'longitude' as text), '') as long`).Where("group_id = ? AND depth = 3 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL", siteID).First(&site).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+								coalesce(cast(group_extras ->> 'longitude' as text), '') as long`).Where("group_id = ? AND depth = 3 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL", siteID).First(&site).Error;
+
+	//If Connection Refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 			for i := 0; i<4; i++ {
 				err = db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
@@ -433,14 +437,7 @@ func GetSite(token *entities.Users, nationality string, siteID string) (*entitie
 		}
 	}
 
-	if err := db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
-								coalesce(cast(group_extras ->> 'open' as text), '') as "open",
-								coalesce(cast(group_extras ->> 'close' as text), '') as "close",
-								coalesce(cast(group_extras ->> 'estimate' as text), '') as estimate,
-								coalesce(cast(group_extras ->> 'detail' as text), '') as detail,
-								coalesce(cast(group_extras ->> 'address' as text), '') as address,
-								coalesce(cast(group_extras ->> 'latitude' as text), '') as lat,
-								coalesce(cast(group_extras ->> 'longitude' as text), '') as long`).Where("group_id = ? AND depth = 3 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL", siteID).First(&site).Error; gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "03", "Site not found (" + err.Error() + ")", false
 	}
 
@@ -699,8 +696,10 @@ func SelectTrip(token *entities.Users, page int, size int, qstatus string) (*[]e
 	offset := (page - 1) * size
 	limit := size
 
+	err := db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Find(&counTrip).Error;
+
 	//If Connection refused
-	if err := db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Find(&counTrip).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 			for i := 0; i<4; i++ {
 				err = db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Find(&counTrip).Error;
@@ -716,7 +715,7 @@ func SelectTrip(token *entities.Users, page int, size int, qstatus string) (*[]e
 		}
 	}
 
-	if err := db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Find(&counTrip).Error; gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
 	}
 
@@ -859,14 +858,16 @@ func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, stri
 	
 	var mconfigs []entities.MconfigValue
 
-	//If Connection refused
-	if err := db.DB[0].Select(`mconfig_id, mconfig_src_type,
+	err := db.DB[0].Select(`mconfig_id, mconfig_src_type,
 								mconfig_value ->> 'cs_phone_no' as cs_phone_no,
 								mconfig_value ->> 'cs_fax_no' as cs_fax_no,
 								mconfig_value ->> 'cs_wa_no' as cs_wa_no,
 								mconfig_value ->> 'cs_email' as cs_email,
 								mconfig_value ->> 'privacy_policy' as privacy_policy,
-								mconfig_value ->> 'term_condition' as term_condition`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+								mconfig_value ->> 'term_condition' as term_condition`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error;
+
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 		fmt.Printf("%v \n", reflect.TypeOf(err).String())
 			for i := 0; i<4; i++ {
@@ -889,13 +890,7 @@ func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, stri
 		}
 	}
 
-	if err := db.DB[0].Select(`mconfig_id, mconfig_src_type,
-								mconfig_value ->> 'cs_phone_no' as cs_phone_no,
-								mconfig_value ->> 'cs_fax_no' as cs_fax_no,
-								mconfig_value ->> 'cs_wa_no' as cs_wa_no,
-								mconfig_value ->> 'cs_email' as cs_email,
-								mconfig_value ->> 'privacy_policy' as privacy_policy,
-								mconfig_value ->> 'term_condition' as term_condition`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error; gorm.IsRecordNotFoundError(err) {
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "App config not found (" + err.Error() + ")", false
 	}
 
@@ -947,12 +942,13 @@ func GetSiteExtras(token *entities.Users, language string, siteName string) (*[]
 		// 						group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN (?" + strings.Repeat(",?", len(parts)-1) + ")", parts[0], parts[1]).Find(&siteextras).Error; gorm.IsRecordNotFoundError(err) {
 		// return nil, "80", "Site config not found (" + err.Error() + ")", false
 		// }
-
-		//If Connection refused
-		if err := db.DB[1].Select(`group_id, group_mid, group_name,
+		err := db.DB[1].Select(`group_id, group_mid, group_name,
 								group_extras -> 'adult_age' ->> 'id' as adult_age,
 								group_extras -> 'child_age' ->> 'id' as child_age,
-								group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+								group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 			fmt.Printf("%v \n", err.Error())
 			fmt.Printf("%v \n", reflect.TypeOf(err).String())
 				for i := 0; i<4; i++ {
@@ -972,20 +968,19 @@ func GetSiteExtras(token *entities.Users, language string, siteName string) (*[]
 			}
 		}
 
-		if err := db.DB[1].Select(`group_id, group_mid, group_name,
-								group_extras -> 'adult_age' ->> 'id' as adult_age,
-								group_extras -> 'child_age' ->> 'id' as child_age,
-								group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error; gorm.IsRecordNotFoundError(err) {
+		if gorm.IsRecordNotFoundError(err) {
 			return nil, "80", "Site config not found (" + err.Error() + ")", false
 		}
 	}
 
 	if language == "en"{
-		//If Connection refused
-		if err := db.DB[1].Select(`group_id, group_mid, group_name,
+		err := db.DB[1].Select(`group_id, group_mid, group_name,
 								group_extras -> 'adult_age' ->> 'en' as adult_age,
 								group_extras -> 'child_age' ->> 'en' as child_age,
-								group_extras -> 'how_to_use_ticket' ->> 'en' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error; (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+								group_extras -> 'how_to_use_ticket' ->> 'en' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 			fmt.Printf("%v \n", err.Error())
 			fmt.Printf("%v \n", reflect.TypeOf(err).String())
 				for i := 0; i<4; i++ {
@@ -1005,10 +1000,7 @@ func GetSiteExtras(token *entities.Users, language string, siteName string) (*[]
 			}
 		}
 
-		if err := db.DB[1].Select(`group_id, group_mid, group_name,
-								group_extras -> 'adult_age' ->> 'en' as adult_age,
-								group_extras -> 'child_age' ->> 'en' as child_age,
-								group_extras -> 'how_to_use_ticket' ->> 'en' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error; gorm.IsRecordNotFoundError(err) {
+		if gorm.IsRecordNotFoundError(err) {
 			return nil, "80", "Site config not found (" + err.Error() + ")", false
 		}
 	}
