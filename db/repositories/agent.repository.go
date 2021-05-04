@@ -55,7 +55,12 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, string, bool) {
 	var agents []entities.AgentModel
 
-	err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
+	err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name,
+								case
+									when ((agent_extras -> 'image_url') isnull) then 'b2bm/agent/default_agent.png'
+									when ((agent_extras ->> 'image_url') = '') then 'b2bm/agent/default_agent.png'
+									else agent_extras ->> 'image_url'
+								end as agent_image_url,
 								agent_extras ->> 'agent_address_detail' as agent_address_detail,
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
@@ -67,7 +72,12 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 		fmt.Printf("%v \n", err.Error())
 			for i := 0; i<4; i++ {
-				err = db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
+				err = db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name,
+								case
+									when ((agent_extras -> 'image_url') isnull) then 'b2bm/agent/default_agent.png'
+									when ((agent_extras ->> 'image_url') = '') then 'b2bm/agent/default_agent.png'
+									else agent_extras ->> 'image_url'
+								end as agent_image_url,
 								agent_extras ->> 'agent_address_detail' as agent_address_detail,
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
@@ -99,16 +109,19 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 			PicName:    agent.Pic_name,
 			Telp:       agent.Telp,
 			Email:      agent.Email,
-			Npwp:				agent.Npwp,
+			Npwp:		agent.Npwp,
 		}
 
 		tmpAgent := entities.AgentModel{
 			Agent_id:       	agent.Agent_id,
-			Group_agent_name: agent.Group_agent_name,
+			Group_agent_name: 	agent.Group_agent_name,
 			Agent_address:  	agent.Agent_address,
 			Agent_name:     	agent.Agent_name,
 			Agent_group_id: 	agent.Agent_group_id,
 			AgentExtras:    	&extras,
+			AgentEmail:			token.Email,
+			AgentUsername:		token.Name,
+			Agent_image_url:	agent.Agent_image_url,
 		}
 
 		dataAgent = append(dataAgent, tmpAgent)

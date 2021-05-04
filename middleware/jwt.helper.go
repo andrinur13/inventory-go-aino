@@ -24,7 +24,8 @@ func CreateJwtToken(data *entities.Users) (string, error) {
 
 	/* Set token claims */
 	claims["authorized"] = true
-	claims["user"] = "useragent"
+	claims["user"] = data.Name
+	// claims["user"] = "useragent"
 	claims["user_id"] = data.ID
 	claims["email"] = data.Email
 	claims["agent_id"] = data.Typeid
@@ -75,11 +76,13 @@ func Decode(tokenString string) *entities.Users {
 		panic(err)
 	}
 
+	user := claims["user"].(string)
 	email := claims["email"].(string)
 	agentID := claims["agent_id"].(float64)
 	userID := claims["user_id"].(float64)
 
 	resp := entities.Users{
+		Name: user,
 		Email:  email,
 		Typeid: int(agentID),
 		ID:     int(userID),
