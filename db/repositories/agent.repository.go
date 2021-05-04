@@ -189,14 +189,12 @@ func UpdateProfileAgent(token *entities.Users, r *entities.AgentReq) (map[string
 
 	var checkAgent []entities.AgentModel
 
-	erro := db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent).Error;
-
 	//If Connection refused not yet
-	if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+	if erro := db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Error; (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError") {
 		fmt.Printf("%v \n", erro.Error())
 		fmt.Printf("%v \n", reflect.TypeOf(erro).String())
 			for i := 0; i<4; i++ {
-				erro = db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent).Error;
+				erro = db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Error;
 				if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError") {
 					fmt.Printf("Hitback(%d)%v \n", i, erro)
 					time.Sleep(3 * time.Second)
@@ -208,6 +206,8 @@ func UpdateProfileAgent(token *entities.Users, r *entities.AgentReq) (map[string
 			return nil, "502", "Connection has a problem", false
 		}
 	}
+	
+	db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent)
 
 	return nil, "01", "Agent successfully updated", true
 }

@@ -66,10 +66,44 @@ func GetTicket(r interface{}, token *entities.Users) (map[string]interface{}, st
 
 	if mbmid == nil || mbmid == "" {
 		query += ` order by a.trf_id DESC;`
-		db.DB[0].Raw(query, token.Typeid).Scan(&masterTicket)
+		err := db.DB[0].Raw(query, token.Typeid).Scan(&masterTicket).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+				for i := 0; i<4; i++ {
+					err = db.DB[0].Raw(query, token.Typeid).Scan(&masterTicket).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false
+			}
+		}
 	} else {
 		query += ` and (d.group_mid = ?) order by a.trf_id DESC;`
-		db.DB[0].Raw(query, token.Typeid, mbmid).Scan(&masterTicket)
+		err := db.DB[0].Raw(query, token.Typeid, mbmid).Scan(&masterTicket).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+				for i := 0; i<4; i++ {
+					err = db.DB[0].Raw(query, token.Typeid, mbmid).Scan(&masterTicket).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false
+			}
+		}
 	}
 
 	if len(masterTicket) == 0 {
