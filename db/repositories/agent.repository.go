@@ -3,6 +3,8 @@ package repositories
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"math"
 	"reflect"
 	"time"
 	"twc-ota-api/db"
@@ -292,4 +294,135 @@ func InsertAgent(token *entities.Users, r *entities.AgentReq) (map[string]interf
 		"group":   r.Group,
 		"contact": r.Extras,
 	}, "01", "Agent registration success", true
+}
+
+//GetInbox : inbox notification
+func GetInboxNotification(token *entities.Users, typeNotif string, page int, size int) (*[]entities.InboxNotificationModel, string, string, bool, int, int, int) {
+	var inbox []entities.InboxNotificationModel
+	var countInbox []entities.InboxNotificationModel
+
+	offset := (page - 1) * size
+	limit := size
+
+	now := time.Now()
+	
+	var typeN int;
+	if (typeNotif != ""){
+		typeNo, err := strconv.Atoi(typeNotif)
+		if err != nil {
+			// handle error
+			fmt.Println(err)
+			return nil, "99", "Failed to parse type", false, 0, 0, 0
+		}
+		typeN = typeNo
+	}else{
+		typeN = 0
+	}
+
+	if (typeN == 1) || (typeN == 2){
+		err := db.DB[0].Select(`inbox_id`).Where("inbox_agent_id = ? and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+				for i := 0; i<4; i++ {
+					err = db.DB[0].Select(`inbox_id`).Where("inbox_agent_id = ? and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false, 0, 0, 0
+			}
+		}
+
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+		if err := db.DB[0].Select(`inbox_id,
+									agent_name as agent_name,
+									group_agent_name as agent_group_name,
+									inbox_created_at as inbox_created_at,
+									case
+										when inbox_image_url isnull then 'b2bm/inbox/default_inbox.jpg'
+										else inbox_image_url
+									end as inbox_image_url,
+									inbox_title as inbox_title,
+									inbox_subtitle as inbox_short_desc,
+									inbox_desc as inbox_full_desc
+									`).Where("inbox_agent_id = ? and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Joins("inner join master_agents on agent_id = inbox_agent_id").Joins("inner join master_agents_group on group_agent_id = inbox_group_agent_id").Limit(limit).Offset(offset).Find(&inbox).Error; gorm.IsRecordNotFoundError(err) {
+			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+	}else {
+		err := db.DB[0].Select(`inbox_id`).Where("inbox_agent_id = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+				for i := 0; i<4; i++ {
+					err = db.DB[0].Select(`inbox_id`).Where("inbox_agent_id = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false, 0, 0, 0
+			}
+		}
+
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+		if err := db.DB[0].Select(`inbox_id,
+									agent_name as agent_name,
+									group_agent_name as agent_group_name,
+									inbox_created_at as inbox_created_at,
+									case
+										when inbox_image_url isnull then 'b2bm/inbox/default_inbox.jpg'
+										else inbox_image_url
+									end as inbox_image_url,
+									inbox_title as inbox_title,
+									inbox_subtitle as inbox_short_desc,
+									inbox_desc as inbox_full_desc
+									`).Where("inbox_agent_id = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Joins("inner join master_agents on agent_id = inbox_agent_id").Joins("inner join master_agents_group on group_agent_id = inbox_group_agent_id").Limit(limit).Offset(offset).Find(&inbox).Error; gorm.IsRecordNotFoundError(err) {
+			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+	}
+
+	var dataInbox []entities.InboxNotificationModel
+
+	for _, data := range inbox {
+
+		createdat, _ := time.Parse(time.RFC3339, data.Inbox_created_at)
+
+		tmpInbox := entities.InboxNotificationModel{
+			Inbox_id:      		data.Inbox_id,
+			Agent_name: 		data.Agent_name,
+			Agent_group_name:  	data.Agent_group_name,
+			Inbox_created_at:   createdat.Format("02 Jan 2006"),
+			Inbox_image_url:  	data.Inbox_image_url,
+			Inbox_title:  		data.Inbox_title,
+			Inbox_short_desc: 	data.Inbox_short_desc,
+			Inbox_full_desc:  	data.Inbox_full_desc,
+		}
+
+		dataInbox = append(dataInbox, tmpInbox)
+	}
+
+	totalData := len(countInbox)
+	currentData := len(inbox)
+	rawPages := float64(totalData) / float64(size)
+	totalPages := int(math.Ceil(rawPages))
+
+	return &dataInbox, "01", "Success get inbox list.", true, totalData, totalPages, currentData
 }
