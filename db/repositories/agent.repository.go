@@ -320,13 +320,13 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 	}
 
 	if (typeN == 1) || (typeN == 2){
-		err := db.DB[0].Select(`inbox_id`).Where("inbox_agent_id = ? and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
+		err := db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
 
 		//If Connection refused
 		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 			fmt.Printf("%v \n", err.Error())
 				for i := 0; i<4; i++ {
-					err = db.DB[0].Select(`inbox_id`).Where("inbox_agent_id = ? and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
+					err = db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
 					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 						fmt.Printf("Hitback(%d)%v \n", i, err)
 						time.Sleep(3 * time.Second)
@@ -354,18 +354,18 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 									inbox_title as inbox_title,
 									inbox_subtitle as inbox_short_desc,
 									inbox_desc as inbox_full_desc
-									`).Where("inbox_agent_id = ? and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Joins("inner join master_agents on agent_id = inbox_agent_id").Joins("inner join master_agents_group on group_agent_id = inbox_group_agent_id").Limit(limit).Offset(offset).Find(&inbox).Error; gorm.IsRecordNotFoundError(err) {
+									`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_type = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Joins("inner join master_agents on agent_id = inbox_agent_id").Joins("inner join master_agents_group on group_agent_id = inbox_group_agent_id").Limit(limit).Offset(offset).Find(&inbox).Error; gorm.IsRecordNotFoundError(err) {
 			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
 		}
 
 	}else {
-		err := db.DB[0].Select(`inbox_id`).Where("inbox_agent_id = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
+		err := db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
 
 		//If Connection refused
 		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 			fmt.Printf("%v \n", err.Error())
 				for i := 0; i<4; i++ {
-					err = db.DB[0].Select(`inbox_id`).Where("inbox_agent_id = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
+					err = db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
 					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 						fmt.Printf("Hitback(%d)%v \n", i, err)
 						time.Sleep(3 * time.Second)
@@ -393,7 +393,7 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 									inbox_title as inbox_title,
 									inbox_subtitle as inbox_short_desc,
 									inbox_desc as inbox_full_desc
-									`).Where("inbox_agent_id = ? and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Joins("inner join master_agents on agent_id = inbox_agent_id").Joins("inner join master_agents_group on group_agent_id = inbox_group_agent_id").Limit(limit).Offset(offset).Find(&inbox).Error; gorm.IsRecordNotFoundError(err) {
+									`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_show_start_date <= ? and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Joins("inner join master_agents on agent_id = inbox_agent_id").Joins("inner join master_agents_group on group_agent_id = inbox_group_agent_id").Limit(limit).Offset(offset).Find(&inbox).Error; gorm.IsRecordNotFoundError(err) {
 			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
 		}
 
