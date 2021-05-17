@@ -339,6 +339,10 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 			}
 		}
 
+		if len(countInbox) == 0 {
+			return nil, "60", "Inbox not found", false, 0, 0, 0
+		}
+
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
 		}
@@ -376,6 +380,10 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 				return nil, "502", "Connection has a problem", false, 0, 0, 0
 			}
+		}
+
+		if len(countInbox) == 0 {
+			return nil, "60", "Inbox not found", false, 0, 0, 0
 		}
 
 		if gorm.IsRecordNotFoundError(err) {

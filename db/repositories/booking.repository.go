@@ -42,22 +42,30 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		return nil, "99", "Format error, please complete tarif's payload", false
 	}
 
+	var payment_method string
+	if (r.BookingPaymentMethod == ""){
+		payment_method = "OTA"
+	} else {
+		payment_method = r.BookingPaymentMethod
+	}
+
 	stan := time.Now().UnixNano()
 	invNumber := r.Mbmid + "." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(stan, 10)
 
 	booking := entities.Booking{
-		Agent_id:              token.Typeid,
-		Booking_number:        r.BookingNumber,
-		Booking_date:          r.BookingDate,
-		Booking_mid:           r.Mbmid,
-		Booking_amount:        r.PayAmt,
-		Booking_emoney:        r.Emoney,
-		Booking_total_payment: r.PayAmt,
-		Customer_email:        r.Email,
-		Customer_phone:        r.Phone,
-		Customer_username:     r.Username,
-		Customer_note:         r.Note,
-		Booking_invoice:       invNumber,
+		Agent_id:              	token.Typeid,
+		Booking_number:        	r.BookingNumber,
+		Booking_date:          	r.BookingDate,
+		Booking_mid:           	r.Mbmid,
+		Booking_amount:        	r.PayAmt,
+		Booking_emoney:        	r.Emoney,
+		Booking_payment_method:	payment_method,
+		Booking_total_payment: 	r.PayAmt,
+		Customer_email:        	r.Email,
+		Customer_phone:        	r.Phone,
+		Customer_username:     	r.Username,
+		Customer_note:         	r.Note,
+		Booking_invoice:       	invNumber,
 	}
 
 	db.DB[0].NewRecord(booking)

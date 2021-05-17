@@ -1,16 +1,17 @@
 package requests
 
 type BookingReq struct {
-	Mbmid         string    `json:"mbmid"`
-	BookingNumber string    `json:"booking_number"`
-	BookingDate   string    `json:"booking_date"`
-	PayAmt        float32   `json:"pay_amount"`
-	Emoney        int       `json:"emoney"`
-	Username      string    `json:"customer_username"`
-	Email         string    `json:"customer_email"`
-	Phone         string    `json:"customer_phone"`
-	Note          string    `json:"customer_note"`
-	Trf           []bookTrf `json:"trf"`
+	Mbmid         			string    	`json:"mbmid"`
+	BookingNumber 			string    	`json:"booking_number"`
+	BookingDate   			string    	`json:"booking_date"`
+	BookingPaymentMethod	string		`json:"booking_payment_method"`
+	PayAmt        			float32   	`json:"pay_amount"`
+	Emoney        			int       	`json:"emoney"`
+	Username      			string    	`json:"customer_username"`
+	Email         			string    	`json:"customer_email"`
+	Phone         			string    	`json:"customer_phone"`
+	Note          			string    	`json:"customer_note"`
+	Trf           			[]bookTrf 	`json:"trf"`
 }
 
 type bookTrf struct {
