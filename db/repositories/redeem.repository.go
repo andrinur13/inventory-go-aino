@@ -69,6 +69,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			Tick_purc:          time.Now().Format("2006-01-02 15:04:05"),
 			Tick_src_type:      5,
 			Tick_total_payment: booking.Booking_total_payment,
+			Tick_payment_method: booking.Booking_payment_method,
 			Tick_stan:          int(stan),
 			Tick_number:        billID,
 			Tick_src_id:        strconv.Itoa(booking.Agent_id),

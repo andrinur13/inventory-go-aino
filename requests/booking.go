@@ -4,7 +4,7 @@ type BookingReq struct {
 	Mbmid         			string    	`json:"mbmid"`
 	BookingNumber 			string    	`json:"booking_number"`
 	BookingDate   			string    	`json:"booking_date"`
-	BookingPaymentMethod	string		`json:"booking_payment_method"`
+	PaymentMethod			string		`json:"payment_method"`
 	PayAmt        			float32   	`json:"pay_amount"`
 	Emoney        			int       	`json:"emoney"`
 	Username      			string    	`json:"customer_username"`

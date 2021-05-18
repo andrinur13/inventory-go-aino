@@ -43,10 +43,10 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 	}
 
 	var payment_method string
-	if (r.BookingPaymentMethod == ""){
+	if (r.PaymentMethod == ""){
 		payment_method = "OTA"
 	} else {
-		payment_method = r.BookingPaymentMethod
+		payment_method = r.PaymentMethod
 	}
 
 	stan := time.Now().UnixNano()

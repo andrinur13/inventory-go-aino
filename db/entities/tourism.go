@@ -48,6 +48,7 @@ type TickModel struct {
 	Tick_issuing       string
 	Tick_date          string
 	Tick_total_payment float32
+	Tick_payment_method string
 }
 
 func (TickModel) TableName() string {
