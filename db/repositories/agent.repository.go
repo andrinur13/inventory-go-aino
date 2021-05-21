@@ -320,13 +320,13 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 	}
 
 	if (typeN == 1) || (typeN == 2){
-		err := db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_type = ? and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
+		err := db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0 or inbox_agent_id isnull) and inbox_type = ? and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
 
 		//If Connection refused
 		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 			fmt.Printf("%v \n", err.Error())
 				for i := 0; i<4; i++ {
-					err = db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_type = ? and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
+					err = db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0 or inbox_agent_id isnull) and inbox_type = ? and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
 					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 						fmt.Printf("Hitback(%d)%v \n", i, err)
 						time.Sleep(3 * time.Second)
@@ -352,7 +352,7 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 									group_agent_name as agent_group_name,
 									inbox_created_at as inbox_created_at,
 									case
-										when inbox_image_url isnull then 'b2bm/inbox/default_inbox.jpg'
+										when (inbox_image_url isnull or inbox_image_url = '') then 'b2bm/inbox/default_inbox.jpg'
 										else inbox_image_url
 									end as inbox_image_url,
 									inbox_title as inbox_title,
@@ -363,13 +363,13 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 		}
 
 	}else {
-		err := db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
+		err := db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0 or inbox_agent_id isnull) and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
 
 		//If Connection refused
 		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
 			fmt.Printf("%v \n", err.Error())
 				for i := 0; i<4; i++ {
-					err = db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
+					err = db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0 or inbox_agent_id isnull) and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
 					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 						fmt.Printf("Hitback(%d)%v \n", i, err)
 						time.Sleep(3 * time.Second)
@@ -395,7 +395,7 @@ func GetInboxNotification(token *entities.Users, typeNotif string, page int, siz
 									group_agent_name as agent_group_name,
 									inbox_created_at as inbox_created_at,
 									case
-										when inbox_image_url isnull then 'b2bm/inbox/default_inbox.jpg'
+										when (inbox_image_url isnull or inbox_image_url = '') then 'b2bm/inbox/default_inbox.jpg'
 										else inbox_image_url
 									end as inbox_image_url,
 									inbox_title as inbox_title,
