@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"strconv"
+	"fmt"
+	"reflect"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
@@ -23,7 +25,25 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 	var redeemDate = time.Now()
 
 	var bookings []entities.Booking
-	db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings)
+	err := db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings).Error;
+
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
 
 	if len(bookings) == 0 {
 		return nil, "02", "Booking data not found", false
@@ -49,6 +69,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			Tick_purc:          time.Now().Format("2006-01-02 15:04:05"),
 			Tick_src_type:      5,
 			Tick_total_payment: booking.Booking_total_payment,
+			Tick_payment_method: booking.Booking_payment_method,
 			Tick_stan:          int(stan),
 			Tick_number:        billID,
 			Tick_src_id:        strconv.Itoa(booking.Agent_id),

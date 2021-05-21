@@ -2,6 +2,10 @@ package repositories
 
 import (
 	"encoding/json"
+	"fmt"
+	"strconv"
+	"math"
+	"reflect"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
@@ -53,13 +57,48 @@ func GetAgent() (*[]entities.AgentModel, string, string, bool) {
 func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, string, bool) {
 	var agents []entities.AgentModel
 
-	if err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name, 
+	err := db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name,
+								case
+									when ((agent_extras -> 'image_url') isnull) then 'b2bm/agent/default_agent.png'
+									when ((agent_extras ->> 'image_url') = '') then 'b2bm/agent/default_agent.png'
+									else agent_extras ->> 'image_url'
+								end as agent_image_url,
 								agent_extras ->> 'agent_address_detail' as agent_address_detail,
 								agent_extras ->> 'telp' as telp,
 								agent_extras ->> 'no_id' as no_id,
 								agent_extras ->> 'email' as email,
 								agent_extras ->> 'npwp' as npwp,
-								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error; gorm.IsRecordNotFoundError(err) {
+								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error;
+
+	//If Connection Refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+			for i := 0; i<4; i++ {
+				err = db.DB[1].Select(`agent_id, agent_name, agent_address, agent_group_id, group_agent_name,
+								case
+									when ((agent_extras -> 'image_url') isnull) then 'b2bm/agent/default_agent.png'
+									when ((agent_extras ->> 'image_url') = '') then 'b2bm/agent/default_agent.png'
+									else agent_extras ->> 'image_url'
+								end as agent_image_url,
+								agent_extras ->> 'agent_address_detail' as agent_address_detail,
+								agent_extras ->> 'telp' as telp,
+								agent_extras ->> 'no_id' as no_id,
+								agent_extras ->> 'email' as email,
+								agent_extras ->> 'npwp' as npwp,
+								agent_extras ->> 'pic_name' as pic_name`).Where("master_agents.agent_id = ? AND master_agents.deleted_at is null", token.Typeid).Joins("inner join master_agents_group on group_agent_id = master_agents.agent_group_id").Order("agent_name").Find(&agents).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "No agent data found (" + err.Error() + ")", false
 	}
 
@@ -72,16 +111,19 @@ func GetDetailAgent(token *entities.Users) (*[]entities.AgentModel, string, stri
 			PicName:    agent.Pic_name,
 			Telp:       agent.Telp,
 			Email:      agent.Email,
-			Npwp:				agent.Npwp,
+			Npwp:		agent.Npwp,
 		}
 
 		tmpAgent := entities.AgentModel{
 			Agent_id:       	agent.Agent_id,
-			Group_agent_name: agent.Group_agent_name,
+			Group_agent_name: 	agent.Group_agent_name,
 			Agent_address:  	agent.Agent_address,
 			Agent_name:     	agent.Agent_name,
 			Agent_group_id: 	agent.Agent_group_id,
 			AgentExtras:    	&extras,
+			AgentEmail:			token.Email,
+			AgentUsername:		token.Name,
+			Agent_image_url:	agent.Agent_image_url,
 		}
 
 		dataAgent = append(dataAgent, tmpAgent)
@@ -149,6 +191,24 @@ func UpdateProfileAgent(token *entities.Users, r *entities.AgentReq) (map[string
 
 	var checkAgent []entities.AgentModel
 
+	//If Connection refused not yet
+	if erro := db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Error; (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError") {
+		fmt.Printf("%v \n", erro.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(erro).String())
+			for i := 0; i<4; i++ {
+				erro = db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Error;
+				if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, erro)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (erro != nil) && (reflect.TypeOf(erro).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+	
 	db.DB[1].Where("deleted_at is null and agent_id = ?", token.Typeid).Find(&checkAgent).Update(agent)
 
 	return nil, "01", "Agent successfully updated", true
@@ -234,4 +294,143 @@ func InsertAgent(token *entities.Users, r *entities.AgentReq) (map[string]interf
 		"group":   r.Group,
 		"contact": r.Extras,
 	}, "01", "Agent registration success", true
+}
+
+//GetInbox : inbox notification
+func GetInboxNotification(token *entities.Users, typeNotif string, page int, size int) (*[]entities.InboxNotificationModel, string, string, bool, int, int, int) {
+	var inbox []entities.InboxNotificationModel
+	var countInbox []entities.InboxNotificationModel
+
+	offset := (page - 1) * size
+	limit := size
+
+	now := time.Now()
+	
+	var typeN int;
+	if (typeNotif != ""){
+		typeNo, err := strconv.Atoi(typeNotif)
+		if err != nil {
+			// handle error
+			fmt.Println(err)
+			return nil, "99", "Failed to parse type", false, 0, 0, 0
+		}
+		typeN = typeNo
+	}else{
+		typeN = 0
+	}
+
+	if (typeN == 1) || (typeN == 2){
+		err := db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0 or inbox_agent_id isnull) and inbox_type = ? and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+				for i := 0; i<4; i++ {
+					err = db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0 or inbox_agent_id isnull) and inbox_type = ? and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Find(&countInbox).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false, 0, 0, 0
+			}
+		}
+
+		if len(countInbox) == 0 {
+			return nil, "60", "Inbox not found", false, 0, 0, 0
+		}
+
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+		if err := db.DB[0].Select(`inbox_id,
+									agent_name as agent_name,
+									group_agent_name as agent_group_name,
+									inbox_created_at as inbox_created_at,
+									case
+										when (inbox_image_url isnull or inbox_image_url = '') then 'b2bm/inbox/default_inbox.jpg'
+										else inbox_image_url
+									end as inbox_image_url,
+									inbox_title as inbox_title,
+									inbox_subtitle as inbox_short_desc,
+									inbox_desc as inbox_full_desc
+									`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and inbox_type = ? and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, typeN, now, now).Joins("inner join master_agents on agent_id = inbox_agent_id").Joins("inner join master_agents_group on group_agent_id = inbox_group_agent_id").Limit(limit).Offset(offset).Find(&inbox).Error; gorm.IsRecordNotFoundError(err) {
+			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+	}else {
+		err := db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0 or inbox_agent_id isnull) and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+				for i := 0; i<4; i++ {
+					err = db.DB[0].Select(`inbox_id`).Where("(inbox_agent_id = ? or inbox_agent_id = 0 or inbox_agent_id isnull) and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Find(&countInbox).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false, 0, 0, 0
+			}
+		}
+
+		if len(countInbox) == 0 {
+			return nil, "60", "Inbox not found", false, 0, 0, 0
+		}
+
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+		if err := db.DB[0].Select(`inbox_id,
+									agent_name as agent_name,
+									group_agent_name as agent_group_name,
+									inbox_created_at as inbox_created_at,
+									case
+										when (inbox_image_url isnull or inbox_image_url = '') then 'b2bm/inbox/default_inbox.jpg'
+										else inbox_image_url
+									end as inbox_image_url,
+									inbox_title as inbox_title,
+									inbox_subtitle as inbox_short_desc,
+									inbox_desc as inbox_full_desc
+									`).Where("(inbox_agent_id = ? or inbox_agent_id = 0) and (inbox_show_start_date <= ? or inbox_show_start_date isnull) and (inbox_show_end_date >= ? or inbox_show_end_date isnull)", token.Typeid, now, now).Joins("inner join master_agents on agent_id = inbox_agent_id").Joins("inner join master_agents_group on group_agent_id = inbox_group_agent_id").Limit(limit).Offset(offset).Find(&inbox).Error; gorm.IsRecordNotFoundError(err) {
+			return nil, "60", "Inbox not found (" + err.Error() + ")", false, 0, 0, 0
+		}
+
+	}
+
+	var dataInbox []entities.InboxNotificationModel
+
+	for _, data := range inbox {
+
+		createdat, _ := time.Parse(time.RFC3339, data.Inbox_created_at)
+
+		tmpInbox := entities.InboxNotificationModel{
+			Inbox_id:      		data.Inbox_id,
+			Agent_name: 		data.Agent_name,
+			Agent_group_name:  	data.Agent_group_name,
+			Inbox_created_at:   createdat.Format("02 Jan 2006"),
+			Inbox_image_url:  	data.Inbox_image_url,
+			Inbox_title:  		data.Inbox_title,
+			Inbox_short_desc: 	data.Inbox_short_desc,
+			Inbox_full_desc:  	data.Inbox_full_desc,
+		}
+
+		dataInbox = append(dataInbox, tmpInbox)
+	}
+
+	totalData := len(countInbox)
+	currentData := len(inbox)
+	rawPages := float64(totalData) / float64(size)
+	totalPages := int(math.Ceil(rawPages))
+
+	return &dataInbox, "01", "Success get inbox list.", true, totalData, totalPages, currentData
 }

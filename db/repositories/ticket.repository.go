@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"fmt"
+	"reflect"
 	"math"
 	"strings"
 	"time"
@@ -65,10 +66,44 @@ func GetTicket(r interface{}, token *entities.Users) (map[string]interface{}, st
 
 	if mbmid == nil || mbmid == "" {
 		query += ` order by a.trf_id DESC;`
-		db.DB[0].Raw(query, token.Typeid).Scan(&masterTicket)
+		err := db.DB[0].Raw(query, token.Typeid).Scan(&masterTicket).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+				for i := 0; i<4; i++ {
+					err = db.DB[0].Raw(query, token.Typeid).Scan(&masterTicket).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false
+			}
+		}
 	} else {
 		query += ` and (d.group_mid = ?) order by a.trf_id DESC;`
-		db.DB[0].Raw(query, token.Typeid, mbmid).Scan(&masterTicket)
+		err := db.DB[0].Raw(query, token.Typeid, mbmid).Scan(&masterTicket).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+				for i := 0; i<4; i++ {
+					err = db.DB[0].Raw(query, token.Typeid, mbmid).Scan(&masterTicket).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false
+			}
+		}
 	}
 
 	if len(masterTicket) == 0 {
@@ -122,7 +157,26 @@ func SelectCluster(token *entities.Users, nationality string) (*[]entities.Clust
 
 	var cluster []entities.GrupModel
 
-	if err := db.DB[1].Select("*, coalesce(cast(group_extras ->> 'detail' as text), '') as description").Where("depth = 2 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL").Find(&cluster).Error; gorm.IsRecordNotFoundError(err) {
+	err := db.DB[1].Select("*, coalesce(cast(group_extras ->> 'detail' as text), '') as description").Where("depth = 2 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL").Find(&cluster).Error;
+
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+			for i := 0; i<4; i++ {
+				err = db.DB[1].Select("*, coalesce(cast(group_extras ->> 'detail' as text), '') as description").Where("depth = 2 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL").Find(&cluster).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Cluster not found (" + err.Error() + ")", false
 	}
 
@@ -384,14 +438,40 @@ func GetSite(token *entities.Users, nationality string, siteID string) (*entitie
 
 	var site entities.GroupSiteModel
 
-	if err := db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
+	err := db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
 								coalesce(cast(group_extras ->> 'open' as text), '') as "open",
 								coalesce(cast(group_extras ->> 'close' as text), '') as "close",
 								coalesce(cast(group_extras ->> 'estimate' as text), '') as estimate,
 								coalesce(cast(group_extras ->> 'detail' as text), '') as detail,
 								coalesce(cast(group_extras ->> 'address' as text), '') as address,
 								coalesce(cast(group_extras ->> 'latitude' as text), '') as lat,
-								coalesce(cast(group_extras ->> 'longitude' as text), '') as long`).Where("group_id = ? AND depth = 3 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL", siteID).First(&site).Error; gorm.IsRecordNotFoundError(err) {
+								coalesce(cast(group_extras ->> 'longitude' as text), '') as long`).Where("group_id = ? AND depth = 3 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL", siteID).First(&site).Error;
+
+	//If Connection Refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+			for i := 0; i<4; i++ {
+				err = db.DB[1].Select(`group_id, group_name, group_mid, group_logo,
+								coalesce(cast(group_extras ->> 'open' as text), '') as "open",
+								coalesce(cast(group_extras ->> 'close' as text), '') as "close",
+								coalesce(cast(group_extras ->> 'estimate' as text), '') as estimate,
+								coalesce(cast(group_extras ->> 'detail' as text), '') as detail,
+								coalesce(cast(group_extras ->> 'address' as text), '') as address,
+								coalesce(cast(group_extras ->> 'latitude' as text), '') as lat,
+								coalesce(cast(group_extras ->> 'longitude' as text), '') as long`).Where("group_id = ? AND depth = 3 AND cast(group_extras ->> 'type' as text) = 'TP' AND deleted_at is NULL", siteID).First(&site).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "03", "Site not found (" + err.Error() + ")", false
 	}
 
@@ -650,7 +730,26 @@ func SelectTrip(token *entities.Users, page int, size int, qstatus string) (*[]e
 	offset := (page - 1) * size
 	limit := size
 
-	if err := db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Find(&counTrip).Error; gorm.IsRecordNotFoundError(err) {
+	err := db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Find(&counTrip).Error;
+
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Select(`tp_id`).Where("tp_agent_id = ?"+statusCondition, token.Typeid).Find(&counTrip).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false, 0, 0, 0
+		}
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Data transaction not found (" + err.Error() + ")", false, 0, 0, 0
 	}
 
@@ -786,4 +885,179 @@ func SelectTrip(token *entities.Users, page int, size int, qstatus string) (*[]e
 	totalPages := int(math.Ceil(rawPages))
 
 	return &resp, "01", "Success get trx data", true, totalData, totalPages, currentData
+}
+
+//Get App Config
+func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, string, bool) {
+	
+	var mconfigs []entities.MconfigValue
+
+	err := db.DB[0].Select(`mconfig_id, mconfig_src_type,
+								mconfig_value ->> 'cs_phone_no' as cs_phone_no,
+								mconfig_value ->> 'cs_fax_no' as cs_fax_no,
+								mconfig_value ->> 'cs_wa_no' as cs_wa_no,
+								mconfig_value ->> 'cs_email' as cs_email,
+								mconfig_value ->> 'privacy_policy' as privacy_policy,
+								mconfig_value ->> 'term_condition' as term_condition`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error;
+
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Select(`mconfig_id, mconfig_src_type,
+								mconfig_value ->> 'cs_phone_no' as cs_phone_no,
+								mconfig_value ->> 'cs_fax_no' as cs_fax_no,
+								mconfig_value ->> 'cs_wa_no' as cs_wa_no,
+								mconfig_value ->> 'cs_email' as cs_email,
+								mconfig_value ->> 'privacy_policy' as privacy_policy,
+								mconfig_value ->> 'term_condition' as term_condition`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
+		return nil, "02", "App config not found (" + err.Error() + ")", false
+	}
+
+	if len(mconfigs) == 0 {
+		return nil, "70", "App config not found", false
+	}
+
+	var dataMconfig []entities.MconfigValue
+
+	for _, mconfig := range mconfigs {
+
+		tmpMconfigValue := entities.MconfigValue{
+			CsPhoneNo:      mconfig.CsPhoneNo,
+			CsFaxNo: 		mconfig.CsFaxNo,
+			CsWaNo:    		mconfig.CsWaNo,
+			CsEmail:    	mconfig.CsEmail,
+			PrivacyPolicy:  mconfig.PrivacyPolicy,
+			TermCondition:  mconfig.TermCondition,
+		}
+
+		dataMconfig = append(dataMconfig, tmpMconfigValue)
+	}
+
+	return &dataMconfig, "01", "Success get app config", true
+}
+
+//Get Site Extras
+func GetSiteExtras(token *entities.Users, language string, siteName string) (*[]entities.SiteExtras, string, string, bool){
+
+	if siteName == "" {
+		return nil, "81", "lang and site parameter can't be empty.", false
+	}
+
+	if language == "" {
+		return nil, "81", "lang and site parameter can't be empty.", false
+	}
+
+	// sitenew := strings.ReplaceAll(siteName, ", ", "','")
+	sitenew := strings.Replace(siteName, ", ", "','", -1)
+	// parts := strings.Split(siteName, ", ")
+	
+
+	var siteextras []entities.SiteExtras
+
+	if language == "id"{
+		// if err := db.DB[1].Select(`group_id, group_mid, group_name,
+		// 						group_extras -> 'adult_age' ->> 'id' as adult_age,
+		// 						group_extras -> 'child_age' ->> 'id' as child_age,
+		// 						group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN (?" + strings.Repeat(",?", len(parts)-1) + ")", parts[0], parts[1]).Find(&siteextras).Error; gorm.IsRecordNotFoundError(err) {
+		// return nil, "80", "Site config not found (" + err.Error() + ")", false
+		// }
+		err := db.DB[1].Select(`group_id, group_mid, group_name,
+								group_extras -> 'adult_age' ->> 'id' as adult_age,
+								group_extras -> 'child_age' ->> 'id' as child_age,
+								group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+			fmt.Printf("%v \n", reflect.TypeOf(err).String())
+				for i := 0; i<4; i++ {
+					err = db.DB[1].Select(`group_id, group_mid, group_name,
+								group_extras -> 'adult_age' ->> 'id' as adult_age,
+								group_extras -> 'child_age' ->> 'id' as child_age,
+								group_extras -> 'how_to_use_ticket' ->> 'id' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false
+			}
+		}
+
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, "80", "Site config not found (" + err.Error() + ")", false
+		}
+	}
+
+	if language == "en"{
+		err := db.DB[1].Select(`group_id, group_mid, group_name,
+								group_extras -> 'adult_age' ->> 'en' as adult_age,
+								group_extras -> 'child_age' ->> 'en' as child_age,
+								group_extras -> 'how_to_use_ticket' ->> 'en' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error;
+
+		//If Connection refused
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			fmt.Printf("%v \n", err.Error())
+			fmt.Printf("%v \n", reflect.TypeOf(err).String())
+				for i := 0; i<4; i++ {
+					err = db.DB[1].Select(`group_id, group_mid, group_name,
+								group_extras -> 'adult_age' ->> 'en' as adult_age,
+								group_extras -> 'child_age' ->> 'en' as child_age,
+								group_extras -> 'how_to_use_ticket' ->> 'en' as how_to_use_ticket`).Where("deleted_at is null AND group_name IN ('" + sitenew + "')").Find(&siteextras).Error;
+					if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+						fmt.Printf("Hitback(%d)%v \n", i, err)
+						time.Sleep(3 * time.Second)
+						continue
+					}
+					break
+				}
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+				return nil, "502", "Connection has a problem", false
+			}
+		}
+
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, "80", "Site config not found (" + err.Error() + ")", false
+		}
+	}
+
+	if len(siteextras) == 0 {
+		return nil, "80", "Site config not found", false
+	}
+
+	var dataSiteExtras []entities.SiteExtras
+
+	for _, siteex := range siteextras {
+
+		tmpSiteExtras := entities.SiteExtras{
+			Group_id:      		siteex.Group_id,
+			Group_mid: 			siteex.Group_mid,
+			Group_name:    		siteex.Group_name,
+			Adult_age:    		siteex.Adult_age,
+			Child_age:  		siteex.Child_age,
+			How_to_use_ticket:  siteex.How_to_use_ticket,
+		}
+
+		dataSiteExtras = append(dataSiteExtras, tmpSiteExtras)
+	}
+
+	return &dataSiteExtras, "01", "Success get site extras.", true
 }

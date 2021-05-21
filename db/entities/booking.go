@@ -6,6 +6,7 @@ type Booking struct {
 	Booking_number        string
 	Booking_date          string
 	Booking_mid           string
+	Booking_payment_method	string
 	Booking_amount        float32
 	Booking_emoney        int
 	Booking_total_payment float32

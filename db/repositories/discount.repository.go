@@ -3,6 +3,9 @@ package repositories
 import (
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
+	"fmt"
+	"reflect"
+	"time"
 
 	"github.com/jinzhu/gorm"
 )
@@ -53,7 +56,26 @@ func GetPrice(token *entities.Users, r *entities.GetPriceReq) (*entities.GetPric
 
 	var agent entities.AgentModel
 
-	if err := db.DB[1].Select(`agent_group_id`).Where("agent_id = ?", token.Typeid).Find(&agent).Error; gorm.IsRecordNotFoundError(err) {
+	err := db.DB[1].Select(`agent_group_id`).Where("agent_id = ?", token.Typeid).Find(&agent).Error;
+
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+			for i := 0; i<4; i++ {
+				err = db.DB[1].Select(`agent_group_id`).Where("agent_id = ?", token.Typeid).Find(&agent).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
 		return nil, "02", "Agent not found (" + err.Error() + ")", false
 	}
 

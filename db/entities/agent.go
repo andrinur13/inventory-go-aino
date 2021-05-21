@@ -15,6 +15,9 @@ type AgentModel struct {
 	Agent_extras         string       `json:"-"`
 	AgentExtras          *AgentExtras `json:"agent_extras" gorm:"-"`
 	Created_at           string       `json:"-"`
+	AgentUsername		 string		  `json:"agent_username" gorm:"-"`
+	AgentEmail			 string		  `json:"agent_email" gorm:"-"`
+	Agent_image_url		 string		  `json:"agent_image_url" gorm:"-"`
 }
 
 func (AgentModel) TableName() string {
