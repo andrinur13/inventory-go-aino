@@ -63,3 +63,16 @@ type GroupExtras struct {
 	Latitude  string `json:"latitude"`
 	Longitude string `json:"longitude"`
 }
+
+type SiteExtras struct {
+	Group_id   			int			`json:"group_id" gorm:"primary_key"`
+	Group_mid  			string		`json:"group_mid"`
+	Group_name			string		`json:"group_name"`
+	Adult_age 			string		`json:"adult_age"`
+	Child_age   		string		`json:"child_age"`
+	How_to_use_ticket   string		`json:"how_to_use_ticket"`
+}
+
+func (SiteExtras) TableName() string {
+	return "master_group"
+}

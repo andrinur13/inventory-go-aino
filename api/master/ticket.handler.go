@@ -49,6 +49,7 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 	site := r.Group("/site")
 	{
 		site.GET("/detail", permission.Set("PERMISSION_MASTER_USER_VIEW", DetailSite))
+		site.GET("/extras", permission.Set("PERMISSION_MASTER_USER_VIEW", ExtrasSite))
 	}
 	agent := r.Group("/register")
 	{
@@ -69,6 +70,10 @@ func TicketRouter(r *gin.RouterGroup, permission middleware.Permission, cacheMan
 		fav.POST("/delete", permission.Set("PERMISSION_MASTER_USER_SAVE", DeleteFav))
 		fav.GET("/list", permission.Set("PERMISSION_MASTER_USER_SAVE", GetFav))
 		fav.POST("/image", permission.Set("PERMISSION_MASTER_USER_SAVE", UploadFavImage))
+	}
+	appconfig := r.Group("/appconfig")
+	{
+		appconfig.GET("/detail", permission.Set("PERMISSION_MASTER_USER_VIEW", GetAppConfig))
 	}
 }
 
@@ -617,6 +622,49 @@ func UploadFavImage(c *gin.Context) {
 	c.Header("Transfer-Encoding", "identity")
 	c.JSON(http.StatusOK, builder.ApiResponse(success, message, code, gin.H{}))
 	logger.Info(message, code, success, fmt.Sprintf("%v", gin.H{}), string(in))
+}
+
+//Get App Config
+func GetAppConfig(c *gin.Context) {
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	data, code, msg, stat := repositories.GetAppConfig(userData)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), "")
+}
+
+// ExtrasSite : get data site detail
+func ExtrasSite(c *gin.Context) {
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	language := c.DefaultQuery("lang", "")
+	siteName := c.DefaultQuery("site", "")
+
+	data, code, msg, stat := repositories.GetSiteExtras(userData, language, siteName)
+
+	out, _ := json.Marshal(data)
+
+	contentLenght := len(string(out))
+
+	c.Header("Content-Type", "application/json; charset=utf-8")
+	c.Header("Response-Length", strconv.Itoa(contentLenght+76))
+	c.Header("Transfer-Encoding", "identity")
+	c.JSON(http.StatusOK, builder.ApiResponse(stat, msg, code, data))
+	logger.Info(msg, code, stat, fmt.Sprintf("%v", data), "")
 }
 
 //Tes : for testing purpose

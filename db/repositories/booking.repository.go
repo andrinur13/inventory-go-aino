@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"strconv"
+	"fmt"
+	"reflect"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
@@ -40,27 +42,55 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		return nil, "99", "Format error, please complete tarif's payload", false
 	}
 
+	var payment_method string
+	if (r.PaymentMethod == ""){
+		payment_method = "OTA"
+	} else {
+		payment_method = r.PaymentMethod
+	}
+
 	stan := time.Now().UnixNano()
 	invNumber := r.Mbmid + "." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(stan, 10)
 
 	booking := entities.Booking{
-		Agent_id:              token.Typeid,
-		Booking_number:        r.BookingNumber,
-		Booking_date:          r.BookingDate,
-		Booking_mid:           r.Mbmid,
-		Booking_amount:        r.PayAmt,
-		Booking_emoney:        r.Emoney,
-		Booking_total_payment: r.PayAmt,
-		Customer_email:        r.Email,
-		Customer_phone:        r.Phone,
-		Customer_username:     r.Username,
-		Customer_note:         r.Note,
-		Booking_invoice:       invNumber,
+		Agent_id:              	token.Typeid,
+		Booking_number:        	r.BookingNumber,
+		Booking_date:          	r.BookingDate,
+		Booking_mid:           	r.Mbmid,
+		Booking_amount:        	r.PayAmt,
+		Booking_emoney:        	r.Emoney,
+		Booking_payment_method:	payment_method,
+		Booking_total_payment: 	r.PayAmt,
+		Customer_email:        	r.Email,
+		Customer_phone:        	r.Phone,
+		Customer_username:     	r.Username,
+		Customer_note:         	r.Note,
+		Booking_invoice:       	invNumber,
 	}
 
 	db.DB[0].NewRecord(booking)
 
-	if err := db.DB[0].Create(&booking).Error; err != nil {
+	err := db.DB[0].Create(&booking).Error;
+
+	//If Connection refused
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+		fmt.Printf("%v \n", err.Error())
+		fmt.Printf("%v \n", reflect.TypeOf(err).String())
+			for i := 0; i<4; i++ {
+				err = db.DB[0].Create(&booking).Error;
+				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+					fmt.Printf("Hitback(%d)%v \n", i, err)
+					time.Sleep(3 * time.Second)
+					continue
+				}
+				break
+			}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			return nil, "502", "Connection has a problem", false
+		}
+	}
+
+	if err != nil {
 		return nil, "02", "Error when inserting booking data (" + err.Error() + ")", false
 	}
 
