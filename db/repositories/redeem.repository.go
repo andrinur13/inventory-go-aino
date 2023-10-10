@@ -176,7 +176,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			// qrImage = qrImage + `<img src="https://chart.apis.google.com/chart?cht=qr&chs=300x300&chl=` + `TIC` + qrString + `&chld=H|0" />`
 		}
 		var book entities.Booking
-		db.DB[0].Where("booking_id = ? AND booking_uuid = ?", booking.Booking_id, booking.Booking_uuid).Find(&book)
+		db.DB[0].Where("booking_uuid = ?", booking.Booking_uuid).Find(&book)
 		book.Booking_redeem_date = redeemDate.Format("2006-01-02 15:04:05")
 		if err := db.DB[0].Save(&book).Error; err != nil {
 			return nil, "07", "Error when updating booking data (" + err.Error() + ")", false
