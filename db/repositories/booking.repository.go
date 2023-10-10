@@ -1,15 +1,16 @@
 package repositories
 
 import (
-	"strconv"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
 	"twc-ota-api/requests"
 
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 )
 
 // BookingTicket : booking ticket
@@ -43,7 +44,7 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 	}
 
 	var payment_method string
-	if (r.PaymentMethod == ""){
+	if r.PaymentMethod == "" {
 		payment_method = "OTA"
 	} else {
 		payment_method = r.PaymentMethod
@@ -53,39 +54,40 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 	invNumber := r.Mbmid + "." + strconv.Itoa(token.Typeid) + "." + strconv.FormatInt(stan, 10)
 
 	booking := entities.Booking{
-		Agent_id:              	token.Typeid,
-		Booking_number:        	r.BookingNumber,
-		Booking_date:          	r.BookingDate,
-		Booking_mid:           	r.Mbmid,
-		Booking_amount:        	r.PayAmt,
-		Booking_emoney:        	r.Emoney,
-		Booking_payment_method:	payment_method,
-		Booking_total_payment: 	r.PayAmt,
-		Customer_email:        	r.Email,
-		Customer_phone:        	r.Phone,
-		Customer_username:     	r.Username,
-		Customer_note:         	r.Note,
-		Booking_invoice:       	invNumber,
+		Agent_id:               token.Typeid,
+		Booking_number:         r.BookingNumber,
+		Booking_date:           r.BookingDate,
+		Booking_mid:            r.Mbmid,
+		Booking_amount:         r.PayAmt,
+		Booking_emoney:         r.Emoney,
+		Booking_payment_method: payment_method,
+		Booking_total_payment:  r.PayAmt,
+		Customer_email:         r.Email,
+		Customer_phone:         r.Phone,
+		Customer_username:      r.Username,
+		Customer_note:          r.Note,
+		Booking_invoice:        invNumber,
+		Booking_uuid:           uuid.NewV4().String(),
 	}
 
 	db.DB[0].NewRecord(booking)
 
-	err := db.DB[0].Create(&booking).Error;
+	err := db.DB[0].Create(&booking).Error
 
 	//If Connection refused
-	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 		fmt.Printf("%v \n", err.Error())
 		fmt.Printf("%v \n", reflect.TypeOf(err).String())
-			for i := 0; i<4; i++ {
-				err = db.DB[0].Create(&booking).Error;
-				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
-					fmt.Printf("Hitback(%d)%v \n", i, err)
-					time.Sleep(3 * time.Second)
-					continue
-				}
-				break
+		for i := 0; i < 4; i++ {
+			err = db.DB[0].Create(&booking).Error
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+				fmt.Printf("Hitback(%d)%v \n", i, err)
+				time.Sleep(3 * time.Second)
+				continue
 			}
-		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			break
+		}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 			return nil, "502", "Connection has a problem", false
 		}
 	}
@@ -111,12 +113,14 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 
 		for i := 0; i < trf.TrfQty; i++ {
 			bookdet := entities.Bookingdet{
-				Bookingdet_booking_id: int(booking.Booking_id),
-				Bookingdet_trf_id:     trf.TrfID,
-				Bookingdet_trftype:    trf.TrfType,
-				Bookingdet_amount:     trf.TrfAmount,
-				Bookingdet_qty:        1,
-				Bookingdet_total:      trf.TrfAmount,
+				Bookingdet_booking_id:   int(booking.Booking_id),
+				Bookingdet_trf_id:       trf.TrfID,
+				Bookingdet_trftype:      trf.TrfType,
+				Bookingdet_amount:       trf.TrfAmount,
+				Bookingdet_qty:          1,
+				Bookingdet_total:        trf.TrfAmount,
+				Bookingdet_uuid:         uuid.NewV4().String(),
+				Bookingdet_booking_uuid: booking.Booking_uuid,
 			}
 			db.DB[0].NewRecord(bookdet)
 
@@ -151,9 +155,11 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 				db.DB[0].Table("master_group").Select("group_mid").Where("mtick_id = ?", ticket.Mtick_id).Joins("left join master_ticket on mtick_group_id = group_id").Scan(&grup)
 
 				booklist := entities.Bookinglist{
-					Bookinglist_bookingdet_id: int(bookdet.Bookingdet_id),
-					Bookinglist_mtick_id:      ticket.Mtick_id,
-					Bookinglist_mid:           grup.Group_mid,
+					Bookinglist_bookingdet_id:   int(bookdet.Bookingdet_id),
+					Bookinglist_mtick_id:        ticket.Mtick_id,
+					Bookinglist_mid:             grup.Group_mid,
+					Bookinglist_uuid:            uuid.NewV4().String(),
+					Bookinglist_bookingdet_uuid: bookdet.Bookingdet_uuid,
 				}
 
 				db.DB[0].NewRecord(bookdet)
