@@ -43,6 +43,15 @@ func BookingTicket(token *entities.Users, r *requests.BookingReq) (map[string]in
 		return nil, "99", "Format error, please complete tarif's payload", false
 	}
 
+	var checkBooking entities.Booking
+	if err := db.DB[0].Where("booking_number = ?", r.BookingNumber).First(&checkBooking).Error; !gorm.IsRecordNotFoundError(err) {
+		return nil, "99", "Error when fetching booking data", false
+	}
+
+	if checkBooking.Booking_uuid != "" {
+		return nil, "99", "Booking number already exist", false
+	}
+
 	var payment_method string
 	if r.PaymentMethod == "" {
 		payment_method = "OTA"
