@@ -1,9 +1,9 @@
 package repositories
 
 import (
-	"strconv"
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
@@ -25,22 +25,22 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 	var redeemDate = time.Now()
 
 	var bookings []entities.Booking
-	err := db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings).Error;
+	err := db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings).Error
 
 	//If Connection refused
-	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 		fmt.Printf("%v \n", err.Error())
 		fmt.Printf("%v \n", reflect.TypeOf(err).String())
-			for i := 0; i<4; i++ {
-				err = db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings).Error;
-				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
-					fmt.Printf("Hitback(%d)%v \n", i, err)
-					time.Sleep(3 * time.Second)
-					continue
-				}
-				break
+		for i := 0; i < 4; i++ {
+			err = db.DB[0].Where("booking_number = ?", r.BookNumber).Find(&bookings).Error
+			if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
+				fmt.Printf("Hitback(%d)%v \n", i, err)
+				time.Sleep(3 * time.Second)
+				continue
 			}
-		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
+			break
+		}
+		if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 			return nil, "502", "Connection has a problem", false
 		}
 	}
@@ -59,20 +59,20 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 		billID := "TWC.5." + strconv.Itoa(booking.Agent_id) + "." + strconv.FormatInt(microStan, 10)
 
 		tick := entities.TickModel{
-			Tick_id:            tickID,
-			Tick_amount:        booking.Booking_amount,
-			Tick_date:          booking.Booking_date,
-			Tick_emoney:        booking.Booking_emoney,
-			Tick_issuing:       booking.Booking_date,
-			Tick_mid:           booking.Booking_mid,
-			Tick_src_inv_num:   booking.Booking_number,
-			Tick_purc:          time.Now().Format("2006-01-02 15:04:05"),
-			Tick_src_type:      5,
-			Tick_total_payment: booking.Booking_total_payment,
+			Tick_id:             tickID,
+			Tick_amount:         booking.Booking_amount,
+			Tick_date:           booking.Booking_date,
+			Tick_emoney:         booking.Booking_emoney,
+			Tick_issuing:        booking.Booking_date,
+			Tick_mid:            booking.Booking_mid,
+			Tick_src_inv_num:    booking.Booking_number,
+			Tick_purc:           time.Now().Format("2006-01-02 15:04:05"),
+			Tick_src_type:       5,
+			Tick_total_payment:  booking.Booking_total_payment,
 			Tick_payment_method: booking.Booking_payment_method,
-			Tick_stan:          int(stan),
-			Tick_number:        billID,
-			Tick_src_id:        strconv.Itoa(booking.Agent_id),
+			Tick_stan:           int(stan),
+			Tick_number:         billID,
+			Tick_src_id:         strconv.Itoa(booking.Agent_id),
 		}
 		db.DB[0].NewRecord(tick)
 
@@ -82,7 +82,9 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 
 		var bookingdets []entities.Bookingdet
 
-		db.DB[0].Where("bookingdet_booking_id = ?", booking.Booking_id).Find(&bookingdets)
+		db.DB[0].Where("bookingdet_booking_id = ? AND bookingdet_booking_uuid IS NULL", booking.Booking_id).
+			Or("bookingdet_booking_uuid = ? AND bookingdet_booking_uuid IS NOT NULL", booking.Booking_uuid).
+			Find(&bookingdets)
 
 		if len(bookingdets) == 0 {
 			db.DB[0].Where("tickdet_tick_id = ?", tick.Tick_id).Delete(entities.TickModel{})
@@ -114,7 +116,9 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			}
 
 			var bookinglists []entities.Bookinglist
-			db.DB[0].Where("bookinglist_bookingdet_id = ?", bookingdet.Bookingdet_id).Find(&bookinglists)
+			db.DB[0].Where("bookinglist_bookingdet_id = ? AND bookinglist_bookingdet_uuid IS NULL", bookingdet.Bookingdet_id).
+				Or("bookinglist_bookingdet_uuid = ? AND bookinglist_bookingdet_uuid IS NOT NULL", bookingdet.Bookingdet_uuid).
+				Find(&bookinglists)
 
 			if len(bookinglists) == 0 {
 				db.DB[0].Where("ticklist_tickdet_id = ?", tickdetID).Delete(entities.TickListModel{})
@@ -172,7 +176,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 			// qrImage = qrImage + `<img src="https://chart.apis.google.com/chart?cht=qr&chs=300x300&chl=` + `TIC` + qrString + `&chld=H|0" />`
 		}
 		var book entities.Booking
-		db.DB[0].Where("booking_id = ?", booking.Booking_id).Find(&book)
+		db.DB[0].Where("booking_id = ? AND booking_uuid = ?", booking.Booking_id, booking.Booking_uuid).Find(&book)
 		book.Booking_redeem_date = redeemDate.Format("2006-01-02 15:04:05")
 		if err := db.DB[0].Save(&book).Error; err != nil {
 			return nil, "07", "Error when updating booking data (" + err.Error() + ")", false
