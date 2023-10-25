@@ -475,7 +475,7 @@ func CreateFav(c *gin.Context) {
 						} else {
 							imageIsStored = true
 							rgx := regexp.MustCompile("/var/www/html/public")
-							param.ImageURL = rgx.ReplaceAllString(filePath, "/static")
+							param.ImageURL = rgx.ReplaceAllString(filePath, "/public")
 						}
 					}
 				}
@@ -599,7 +599,7 @@ func UploadFavImage(c *gin.Context) {
 						} else {
 							//update to database
 							rgx := regexp.MustCompile("/var/www/html/public")
-							if e := repositories.StoreFavImage(param.FavID, rgx.ReplaceAllString(filePath, "/static")); e != nil {
+							if e := repositories.StoreFavImage(param.FavID, rgx.ReplaceAllString(filePath, "/public")); e != nil {
 								//remove file if update file
 								os.Remove(filePath)
 								message = fmt.Sprintf("Unable to store image (%v)", e.Error())
