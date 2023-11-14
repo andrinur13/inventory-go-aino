@@ -23,6 +23,8 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 	FROM ota_inventory_detail oid2
 	JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
 	WHERE oi.agent_id = ?
+	AND oid2.redeem_date IS NULL
+	AND oid2.void_date IS NULL
 	AND (
 		(oid2.qr IN (?))
 		OR
@@ -42,7 +44,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 	}
 
 	if len(otaInventoryDetails) != len(req.QR) {
-		return resp, http.StatusNotFound, "QR not found", "TRANSACTION_OTA_NOT_FOUND", false
+		return resp, http.StatusBadRequest, "QR reach maximum exceed", "TRANSACTION_OTA_MAXIMUM", false
 	}
 
 	tx := db.DB[0].Begin()
@@ -56,14 +58,6 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 	for i, item := range otaInventoryDetails {
 		if item.ExpiryDate.Before(time.Now()) {
 			return resp, http.StatusBadRequest, "Ticket has expired", "TRANSACTION_OTA_EXPIRED", false
-		}
-
-		if item.RedeemDate != nil {
-			return resp, http.StatusBadRequest, "Ticket has been redeemed", "TRANSACTION_OTA_REDEEMED", false
-		}
-
-		if item.VoidDate != nil {
-			return resp, http.StatusBadRequest, "Ticket has been voided", "TRANSACTION_OTA_VOIDED", false
 		}
 
 		if item.QrPrefix != nil {
@@ -117,11 +111,6 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
 		}
 
-		visitDate, err := time.Parse("2006-01-02", req.VisitDate)
-		if err != nil {
-			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		}
-
 		var ticktlistAddition entities.TickListAddition
 		if err := tx.Raw(`
 		SELECT
@@ -136,6 +125,10 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
 		}
 
+		visitDate, err := time.Parse("2006-01-02", req.VisitDate)
+		if err != nil {
+			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
+		}
 		expiryDate := visitDate.Add(time.Hour * 24).Add(time.Second * -1)
 		newTickList := entities.TickListModel{
 			Ticklist_id:         uuid.NewV4(),
