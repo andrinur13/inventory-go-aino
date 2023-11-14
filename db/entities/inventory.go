@@ -3,7 +3,7 @@ package entities
 import "time"
 
 type OtaInventory struct {
-	ID              string `gorm:"primary_key"`
+	ID              string
 	InventoryNumber string
 	AgentID         int
 	AgentName       string
@@ -15,9 +15,8 @@ func (OtaInventory) TableName() string {
 }
 
 type OtaInventoryDetail struct {
-	ID             string `gorm:"primary_key"`
+	ID             string
 	OtaInventoryID string
-	OtaInventory   OtaInventory `gorm:"foreignkey:OtaInventoryID"`
 	GroupID        int
 	GroupName      string
 	TrfID          int

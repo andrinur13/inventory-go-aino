@@ -6,6 +6,7 @@ import (
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
+	"twc-ota-api/logger"
 	"twc-ota-api/requests"
 
 	uuid "github.com/satori/go.uuid"
@@ -17,16 +18,25 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 
 	var otaInventoryDetails []entities.OtaInventoryDetail
 
-	if err := db.DB[0].Where("qr IN (?)", req.QR).
-		Or(`qr IS NULL AND qr_prefix = ANY (
-			SELECT
-				split_part(element, '#', 1)
-			FROM unnest(
+	if err := db.DB[0].Raw(`
+	SELECT oid2.*
+	FROM ota_inventory_detail oid2
+	JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
+	WHERE oi.agent_id = ?
+	AND (
+		(oid2.qr IN (?))
+		OR
+		(
+			oid2.qr IS NULL AND oid2.qr_prefix = ANY (
+				SELECT
+					split_part(element, '#', 1)
+				FROM unnest(
 					ARRAY[?]
-				) as element
-		)`, req.QR).
-		Preload("OtaInventory", "agent_id = ?", userData.Typeid).
-		Limit(len(req.QR)).
+				) AS element
+			)
+		)
+	)
+	LIMIT ?`, userData.Typeid, req.QR, req.QR, len(req.QR)).
 		Find(&otaInventoryDetails).Error; err != nil {
 		return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
 	}
@@ -38,15 +48,12 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 	tx := db.DB[0].Begin()
 	defer func() {
 		if r := recover(); r != nil {
+			logger.Warning("Database Rollback", "400", false, fmt.Sprintf("%+v", r))
 			tx.Rollback()
 		}
 	}()
 
 	for i, item := range otaInventoryDetails {
-		if userData.Typeid != item.OtaInventory.AgentID {
-			return resp, http.StatusBadRequest, "You are not allowed to redeem this ticket", "TRANSACTION_OTA_FAILED", false
-		}
-
 		if item.ExpiryDate.Before(time.Now()) {
 			return resp, http.StatusBadRequest, "Ticket has expired", "TRANSACTION_OTA_EXPIRED", false
 		}
@@ -59,7 +66,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			return resp, http.StatusBadRequest, "Ticket has been voided", "TRANSACTION_OTA_VOIDED", false
 		}
 
-		if item.QrPrefix == nil {
+		if item.QrPrefix != nil {
 			item.QR = &req.QR[i]
 		}
 
@@ -72,14 +79,14 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 
 		tickStan := time.Now().UnixNano()
 		microStan := tickStan / (int64(time.Millisecond) / int64(time.Nanosecond))
-		tickNumber := fmt.Sprintf("TWC.5.%d.%d", item.OtaInventory.AgentID, microStan)
+		tickNumber := fmt.Sprintf("TWC.5.%d.%d", userData.Typeid, microStan)
 		newTicket := entities.TickModel{
 			Tick_id:             uuid.NewV4(),
 			Tick_stan:           int(tickStan),
 			Tick_number:         tickNumber,
 			Tick_mid:            item.GroupMid,
 			Tick_src_type:       5,
-			Tick_src_id:         fmt.Sprintf("%d", item.OtaInventory.AgentID),
+			Tick_src_id:         fmt.Sprintf("%d", userData.Typeid),
 			Tick_src_inv_num:    req.OtaOrderID,
 			Tick_amount:         item.TrfAmount,
 			Tick_emoney:         0,
