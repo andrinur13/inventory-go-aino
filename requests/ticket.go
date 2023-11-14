@@ -1,5 +1,7 @@
 package requests
 
+import "twc-ota-api/db/entities"
+
 type GenerateTicket struct {
 	MerchantID    string   `json:"merchant_id"`
 	MerchantCode  string   `json:"merchant_code"`
@@ -76,4 +78,15 @@ type Transaction struct {
 	// MerchantCode string `json:"merchant_code"`
 	DateStart string `json:"date_start"`
 	DateEnd   string `json:"date_end"`
+}
+
+type GetQrRequest struct {
+	Limit int `form:"limit"`
+}
+
+type GetQrResponse struct {
+	TotalTicket     int               `json:"total_ticket"`
+	RedeemedTicket  int               `json:"redeemed_ticket"`
+	RemainingTicket int               `json:"remaining_ticket"`
+	QrData          []entities.QrItem `json:"qr_data"`
 }

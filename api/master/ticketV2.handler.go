@@ -22,6 +22,7 @@ func TicketRouterV2(r *gin.RouterGroup, permission middleware.Permission, cacheM
 	ticket := r.Group("/ticket")
 	{
 		ticket.POST("/redeem", permission.Set("PERMISSION_MASTER_USER_SAVE", RedeemTicketV2))
+		ticket.GET("/qr", permission.Set("PERMISSION_MASTER_USER_SAVE", GetQR))
 	}
 }
 
@@ -48,6 +49,34 @@ func RedeemTicketV2(c *gin.Context) {
 	userData := middleware.Decode(split[1])
 
 	result, code, msg, msgCode, status := repositories.RedeemTicketV2(userData, request)
+
+	c.JSON(code, builder.ApiResponseData(code, msg, msgCode, result))
+	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{}), string(in))
+}
+
+// GetQR : get qr
+func GetQR(c *gin.Context) {
+	query := new(requests.GetQrRequest)
+
+	if err := c.ShouldBindQuery(query); err != nil {
+		c.JSON(http.StatusBadRequest, builder.ApiResponse(false, err.Error(), "400", nil))
+		logger.Warning(err.Error(), "400", false, fmt.Sprintf("%+v", query))
+		return
+	}
+
+	in, err := json.Marshal(query)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, builder.ApiResponse(false, err.Error(), "400", nil))
+		logger.Warning(err.Error(), "400", false, fmt.Sprintf("%+v", query))
+		return
+	}
+
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	result, code, msg, msgCode, status := repositories.GetQRV2(userData, query)
 
 	c.JSON(code, builder.ApiResponseData(code, msg, msgCode, result))
 	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{}), string(in))
