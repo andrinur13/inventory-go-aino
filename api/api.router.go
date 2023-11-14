@@ -11,7 +11,7 @@ import (
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 )
 
-//Init : registering router handler
+// Init : registering router handler
 func Init(router *gin.Engine, cache *service.CacheManager) {
 	permission := middleware.Permit{}
 
@@ -32,6 +32,12 @@ func Init(router *gin.Engine, cache *service.CacheManager) {
 		master.TicketRouter(route, permission, cache)
 		master.DiscountRouter(route, permission, cache)
 		master.AgentRouter(route, permission, cache)
+	}
+
+	routeV2 := route.Group("/v2")
+	routeV2.Use(middleware.Auth(cm))
+	{
+		master.TicketRouterV2(routeV2, permission, cache)
 	}
 
 	pub := router.Group("/public")

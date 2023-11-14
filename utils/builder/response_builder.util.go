@@ -1,6 +1,6 @@
 package builder
 
-//response message
+// response message
 const (
 	MessageFetchTrxFailed  = "Failed to get transactions data"
 	MessageFetchTrxSuccess = "Transactions data retrieved successfully"
@@ -19,6 +19,13 @@ type ReadyStatement struct {
 	Dbconn int
 	Query  string
 	Params []interface{}
+}
+
+type ResponseData struct {
+	Code        int         `json:"code"`
+	Message     string      `json:"message"`
+	MessageCode string      `json:"message_code"`
+	Data        interface{} `json:"data"`
 }
 
 func BaseResponse(success bool, message string, data interface{}) map[string]interface{} {
@@ -76,4 +83,13 @@ func WebsocketResponse(success bool, message string, data interface{}) map[strin
 		"success": success,
 		"message": message,
 		"data":    data}
+}
+
+func ApiResponseData(code int, message string, messageCode string, data interface{}) *ResponseData {
+	return &ResponseData{
+		Code:        code,
+		Message:     message,
+		MessageCode: messageCode,
+		Data:        data,
+	}
 }
