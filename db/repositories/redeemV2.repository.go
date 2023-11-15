@@ -63,7 +63,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 				(
 					oid2.qr IS NULL AND oid2.qr_prefix = ANY (
 						SELECT
-							split_part(element, '#', 1)
+							substring(element, 1, 5)
 						FROM unnest(
 							ARRAY[?]
 						) AS element
