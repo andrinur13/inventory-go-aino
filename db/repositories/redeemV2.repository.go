@@ -3,148 +3,305 @@ package repositories
 import (
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 	"twc-ota-api/db"
 	"twc-ota-api/db/entities"
 	"twc-ota-api/logger"
 	"twc-ota-api/requests"
+	"twc-ota-api/utils/helper"
 
 	uuid "github.com/satori/go.uuid"
 )
+
+type ResponseDTO struct {
+	Code        int
+	Message     string
+	MessageCode string
+	Status      bool
+	Error       error
+}
 
 // RedeemTicket : redeem ticket
 func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[string]interface{}, int, string, string, bool) {
 	resp := make(map[string]interface{}, 0)
 
-	var otaInventoryDetails []entities.OtaInventoryDetail
+	batchSize := 10
+	expectedResponses := len(req.QR) / batchSize
+	if len(req.QR)%batchSize != 0 {
+		expectedResponses++
+	}
 
-	if err := db.DB[0].Raw(`
-	SELECT oid2.*
-	FROM ota_inventory_detail oid2
-	JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
-	WHERE oi.agent_id = ?
-	AND oid2.redeem_date IS NULL
-	AND oid2.void_date IS NULL
-	AND (
-		(oid2.qr IN (?))
-		OR
-		(
-			oid2.qr IS NULL AND oid2.qr_prefix = ANY (
-				SELECT
-					split_part(element, '#', 1)
-				FROM unnest(
-					ARRAY[?]
-				) AS element
+	wg := new(sync.WaitGroup)
+	chResp := make(chan ResponseDTO, expectedResponses)
+	for start, end := 0, 0; start < len(req.QR); start = end {
+		end = start + batchSize
+		if end > len(req.QR) {
+			end = len(req.QR)
+		}
+
+		batch := req.QR[start:end]
+
+		// start fetching ota inventory details by given qr
+		wg.Add(1)
+		go func(batch []string) {
+			defer wg.Done()
+
+			var otaInventoryDetails []entities.OtaInventoryDetail
+
+			if err := db.DB[0].Raw(`
+			SELECT oid2.*
+			FROM ota_inventory_detail oid2
+			JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
+			WHERE oi.agent_id = ?
+			AND oid2.redeem_date IS NULL
+			AND oid2.void_date IS NULL
+			AND (
+				(oid2.qr IN (?))
+				OR
+				(
+					oid2.qr IS NULL AND oid2.qr_prefix = ANY (
+						SELECT
+							split_part(element, '#', 1)
+						FROM unnest(
+							ARRAY[?]
+						) AS element
+					)
+				)
 			)
-		)
-	)
-	LIMIT ?`, userData.Typeid, req.QR, req.QR, len(req.QR)).
-		Find(&otaInventoryDetails).Error; err != nil {
-		return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
+			LIMIT ?`, userData.Typeid, batch, batch, len(batch)).
+				Scan(&otaInventoryDetails).Error; err != nil {
+				chResp <- ResponseDTO{
+					Code:        http.StatusInternalServerError,
+					Message:     err.Error(),
+					MessageCode: "TRANSACTION_OTA_FAILED",
+					Status:      false,
+					Error:       err,
+				}
+				return
+			}
+
+			if len(otaInventoryDetails) != len(batch) {
+				chResp <- ResponseDTO{
+					Code:        http.StatusBadRequest,
+					Message:     "QR reach maximum exceed",
+					MessageCode: "TRANSACTION_OTA_MAXIMUM",
+					Status:      false,
+					Error:       nil,
+				}
+				return
+			}
+			// end fetching ota inventory details by given qr
+
+			// start filtering mid
+			mids := make([]string, 0)
+			for _, item := range otaInventoryDetails {
+				mids = append(mids, item.GroupMid)
+			}
+
+			filteredMids := helper.RemoveDuplicateStr(mids)
+			// end filtering mid
+
+			// start main process
+			tx := db.DB[0].Begin()
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Warning("Database Rollback", "400", false, fmt.Sprintf("%+v", r))
+					tx.Rollback()
+				}
+			}()
+
+			for _, mid := range filteredMids {
+				// start initializing variables
+				now := time.Now()
+				newTickID := uuid.NewV4()
+				tickAmount := new(float32)
+				qrData := make([]entities.OtaInventoryDetail, 0)
+				// end initializing variables
+
+				// start updating and appending qr data by given mid
+				for i, otaInventoryDetail := range otaInventoryDetails {
+					if otaInventoryDetail.GroupMid == mid {
+						// start checking & updating ota inventory detail
+						if otaInventoryDetail.ExpiryDate.Before(now) {
+							chResp <- ResponseDTO{
+								Code:        http.StatusBadRequest,
+								Message:     "Ticket has expired",
+								MessageCode: "TRANSACTION_OTA_EXPIRED",
+								Status:      false,
+								Error:       nil,
+							}
+							return
+						}
+
+						if otaInventoryDetail.QrPrefix != nil {
+							otaInventoryDetail.QR = &batch[i]
+						}
+
+						otaInventoryDetail.RedeemDate = &now
+
+						if err := tx.Save(&otaInventoryDetail).Error; err != nil {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     err.Error(),
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+							return
+						}
+
+						qrData = append(qrData, otaInventoryDetail)
+						*tickAmount += otaInventoryDetail.TrfAmount
+						// end checking & updating ota inventory detail
+					}
+				}
+				// end updating and appending qr data by given mid
+
+				// start creating new ticket
+				tickStan := now.UnixNano()
+				microStan := tickStan / (int64(time.Millisecond) / int64(time.Nanosecond))
+				tickNumber := fmt.Sprintf("TWC.5.%d.%d", userData.Typeid, microStan)
+				newTicket := entities.TickModel{
+					Tick_id:             newTickID,
+					Tick_stan:           int(tickStan),
+					Tick_number:         tickNumber,
+					Tick_mid:            mid,
+					Tick_src_type:       5,
+					Tick_src_id:         fmt.Sprintf("%d", userData.Typeid),
+					Tick_src_inv_num:    req.OtaOrderID,
+					Tick_amount:         *tickAmount,
+					Tick_emoney:         0,
+					Tick_purc:           now.Format("2006-01-02 15:04:05"),
+					Tick_issuing:        now.Format("2006-01-02 15:04:05"),
+					Tick_date:           req.VisitDate,
+					Tick_total_payment:  *tickAmount,
+					Tick_payment_method: "OTA",
+				}
+
+				if err := tx.Create(&newTicket).Error; err != nil {
+					chResp <- ResponseDTO{
+						Code:        http.StatusInternalServerError,
+						Message:     err.Error(),
+						MessageCode: "TRANSACTION_OTA_FAILED",
+						Status:      false,
+						Error:       err,
+					}
+					return
+				}
+				// end creating new ticket
+
+				for _, item := range qrData {
+					newTickdetID := uuid.NewV4()
+
+					// start creating new tickdet
+					newTickDet := entities.TickDetModel{
+						Tickdet_id:      newTickdetID,
+						Tickdet_tick_id: newTickID,
+						Tickdet_trf_id:  item.TrfID,
+						Tickdet_trftype: item.TrfType,
+						Tickdet_amount:  item.TrfAmount,
+						Tickdet_qty:     1,
+						Tickdet_total:   item.TrfAmount,
+						Tickdet_qr:      *item.QR,
+						Ext:             `{"void": {"status": false}, "refund": {"status": false}, "cashback": {"status": false}, "nationality": "ID"}`,
+					}
+
+					if err := tx.Create(&newTickDet).Error; err != nil {
+						chResp <- ResponseDTO{
+							Code:        http.StatusInternalServerError,
+							Message:     err.Error(),
+							MessageCode: "TRANSACTION_OTA_FAILED",
+							Status:      false,
+							Error:       err,
+						}
+						return
+					}
+					// end creating new tickdet
+
+					// start fetching ticklist addition by given trf id
+					var ticktlistAdditions []entities.TickListAddition
+					if err := tx.Raw(`
+					SELECT
+						mt2.trfdet_mtick_id,
+						mg.group_mid
+					FROM master_tariff mt
+					JOIN master_tariffdet mt2 ON mt2.trfdet_trf_id = mt.trf_id
+					JOIN master_ticket mt3 ON mt3.mtick_id = mt2.trfdet_mtick_id
+					JOIN master_group mg ON mg.group_id = mt3.mtick_group_id
+					WHERE mt.trf_id = ?
+					`, item.TrfID).Scan(&ticktlistAdditions).Error; err != nil {
+						chResp <- ResponseDTO{
+							Code:        http.StatusInternalServerError,
+							Message:     err.Error(),
+							MessageCode: "TRANSACTION_OTA_FAILED",
+							Status:      false,
+							Error:       err,
+						}
+						return
+					}
+					// end fetching ticklist addition by given trf id
+
+					// start creating new ticklist
+					for _, ticktlistAddition := range ticktlistAdditions {
+						visitDate, err := time.Parse("2006-01-02", req.VisitDate)
+						if err != nil {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     err.Error(),
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+							return
+						}
+						expiryDate := visitDate.Add(time.Hour * 24).Add(time.Second * -1)
+						newTickList := entities.TickListModel{
+							Ticklist_id:         uuid.NewV4(),
+							Ticklist_tickdet_id: newTickdetID,
+							Ticklist_mtick_id:   ticktlistAddition.TrfdetMtickID,
+							Ticklist_expire:     expiryDate.Format("2006-01-02 15:04:05"),
+							Ticklist_mid:        ticktlistAddition.GroupMid,
+						}
+
+						if err := tx.Create(&newTickList).Error; err != nil {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     err.Error(),
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+							return
+						}
+					}
+					// end creating new ticklist
+				}
+			}
+
+			if err := tx.Commit().Error; err != nil {
+				chResp <- ResponseDTO{
+					Code:        http.StatusInternalServerError,
+					Message:     err.Error(),
+					MessageCode: "TRANSACTION_OTA_FAILED",
+					Status:      false,
+					Error:       err,
+				}
+				return
+			}
+			// end main process
+
+			chResp <- ResponseDTO{Error: nil}
+		}(batch)
 	}
 
-	if len(otaInventoryDetails) != len(req.QR) {
-		return resp, http.StatusBadRequest, "QR reach maximum exceed", "TRANSACTION_OTA_MAXIMUM", false
-	}
+	wg.Wait()
+	close(chResp)
 
-	tx := db.DB[0].Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Warning("Database Rollback", "400", false, fmt.Sprintf("%+v", r))
-			tx.Rollback()
+	for res := range chResp {
+		if res.Error != nil {
+			return resp, res.Code, res.Message, res.MessageCode, res.Status
 		}
-	}()
-
-	for i, item := range otaInventoryDetails {
-		if item.ExpiryDate.Before(time.Now()) {
-			return resp, http.StatusBadRequest, "Ticket has expired", "TRANSACTION_OTA_EXPIRED", false
-		}
-
-		if item.QrPrefix != nil {
-			item.QR = &req.QR[i]
-		}
-
-		now := time.Now()
-		item.RedeemDate = &now
-
-		if err := tx.Save(&item).Error; err != nil {
-			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		}
-
-		tickStan := time.Now().UnixNano()
-		microStan := tickStan / (int64(time.Millisecond) / int64(time.Nanosecond))
-		tickNumber := fmt.Sprintf("TWC.5.%d.%d", userData.Typeid, microStan)
-		newTicket := entities.TickModel{
-			Tick_id:             uuid.NewV4(),
-			Tick_stan:           int(tickStan),
-			Tick_number:         tickNumber,
-			Tick_mid:            item.GroupMid,
-			Tick_src_type:       5,
-			Tick_src_id:         fmt.Sprintf("%d", userData.Typeid),
-			Tick_src_inv_num:    req.OtaOrderID,
-			Tick_amount:         item.TrfAmount,
-			Tick_emoney:         0,
-			Tick_purc:           now.Format("2006-01-02 15:04:05"),
-			Tick_issuing:        now.Format("2006-01-02 15:04:05"),
-			Tick_date:           req.VisitDate,
-			Tick_total_payment:  item.TrfAmount,
-			Tick_payment_method: "OTA",
-		}
-
-		if err := tx.Create(&newTicket).Error; err != nil {
-			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		}
-
-		newTickDet := entities.TickDetModel{
-			Tickdet_id:      uuid.NewV4(),
-			Tickdet_tick_id: newTicket.Tick_id,
-			Tickdet_trf_id:  item.TrfID,
-			Tickdet_trftype: item.TrfType,
-			Tickdet_amount:  item.TrfAmount,
-			Tickdet_qty:     1,
-			Tickdet_total:   item.TrfAmount,
-			Tickdet_qr:      *item.QR,
-			Ext:             `{"void": {"status": false}, "refund": {"status": false}, "cashback": {"status": false}, "nationality": "ID"}`,
-		}
-
-		if err := tx.Create(&newTickDet).Error; err != nil {
-			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		}
-
-		var ticktlistAddition entities.TickListAddition
-		if err := tx.Raw(`
-		SELECT
-			mt2.trfdet_mtick_id,
-			mg.group_mid
-		FROM master_tariff mt
-		JOIN master_tariffdet mt2 ON mt2.trfdet_trf_id = mt.trf_id
-		JOIN master_ticket mt3 ON mt3.mtick_id = mt2.trfdet_mtick_id
-		JOIN master_group mg ON mg.group_id = mt3.mtick_group_id
-		WHERE mt.trf_id = ?
-		`, item.TrfID).Scan(&ticktlistAddition).Error; err != nil {
-			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		}
-
-		visitDate, err := time.Parse("2006-01-02", req.VisitDate)
-		if err != nil {
-			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		}
-		expiryDate := visitDate.Add(time.Hour * 24).Add(time.Second * -1)
-		newTickList := entities.TickListModel{
-			Ticklist_id:         uuid.NewV4(),
-			Ticklist_tickdet_id: newTickDet.Tickdet_id,
-			Ticklist_mtick_id:   ticktlistAddition.TrfdetMtickID,
-			Ticklist_expire:     expiryDate.Format("2006-01-02 15:04:05"),
-			Ticklist_mid:        ticktlistAddition.GroupMid,
-		}
-
-		if err := tx.Create(&newTickList).Error; err != nil {
-			return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		}
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
 	}
 
 	return resp, http.StatusOK, "Transaction success", "TRANSACTION_OTA_SUCCESS", true
