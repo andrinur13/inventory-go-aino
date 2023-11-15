@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -87,7 +88,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 					Message:     "QR reach maximum exceed",
 					MessageCode: "TRANSACTION_OTA_MAXIMUM",
 					Status:      false,
-					Error:       nil,
+					Error:       errors.New("QR reach maximum exceed"),
 				}
 				return
 			}
@@ -111,6 +112,17 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 				}
 			}()
 
+			if err := tx.Error; err != nil {
+				chResp <- ResponseDTO{
+					Code:        http.StatusInternalServerError,
+					Message:     err.Error(),
+					MessageCode: "TRANSACTION_OTA_FAILED",
+					Status:      false,
+					Error:       err,
+				}
+				return
+			}
+
 			for _, mid := range filteredMids {
 				// start initializing variables
 				now := time.Now()
@@ -129,7 +141,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 								Message:     "Ticket has expired",
 								MessageCode: "TRANSACTION_OTA_EXPIRED",
 								Status:      false,
-								Error:       nil,
+								Error:       errors.New("Ticket has expired"),
 							}
 							return
 						}
