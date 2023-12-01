@@ -55,7 +55,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			var otaInventoryDetails []entities.OtaInventoryDetail
 
 			if err := db.DB[0].Raw(`
-			SELECT oid2.*, oi.agent_id
+			SELECT oid2.*
 			FROM ota_inventory_detail oid2
 			JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
 			WHERE oi.agent_id = ?
@@ -101,17 +101,6 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			// start filtering mid
 			mids := make([]string, 0)
 			for _, item := range otaInventoryDetails {
-				if item.AgentID != userData.Typeid {
-					chResp <- ResponseDTO{
-						Code:        http.StatusForbidden,
-						Message:     "Redeem ticket forbidden",
-						MessageCode: "TRANSACTION_OTA_FORBIDDEN",
-						Status:      false,
-						Error:       errors.New("redeem ticket forbidden"),
-					}
-					return
-				}
-
 				if item.ExpiryDate.Before(time.Now()) {
 					chResp <- ResponseDTO{
 						Code:        http.StatusBadRequest,
@@ -172,8 +161,8 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 							return
 						}
 
-						if otaInventoryDetail.QrPrefix != nil {
-							otaInventoryDetail.QR = &batch[i]
+						if otaInventoryDetail.QrPrefix != "" {
+							otaInventoryDetail.QR = batch[i]
 						}
 
 						otaInventoryDetail.RedeemDate = &now
@@ -241,7 +230,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 						Tickdet_amount:  item.TrfAmount,
 						Tickdet_qty:     1,
 						Tickdet_total:   item.TrfAmount,
-						Tickdet_qr:      *item.QR,
+						Tickdet_qr:      item.QR,
 						Ext:             `{"void": {"status": false}, "refund": {"status": false}, "cashback": {"status": false}, "nationality": "ID"}`,
 					}
 

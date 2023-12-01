@@ -16,16 +16,15 @@ func (OtaInventory) TableName() string {
 
 type OtaInventoryDetail struct {
 	ID             string
-	AgentID        int
 	OtaInventoryID string
 	GroupID        int
 	GroupName      string
 	TrfID          int
 	TrfName        string
 	ExpiryDate     *time.Time
-	QR             *string
+	QR             string
 	TrfAmount      float32
-	QrPrefix       *string
+	QrPrefix       string
 	RedeemDate     *time.Time
 	VoidDate       *time.Time
 	TrfType        string

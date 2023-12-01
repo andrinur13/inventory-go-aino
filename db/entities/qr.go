@@ -12,8 +12,8 @@ type QrItem struct {
 	TrfID      int     `json:"trf_id"`
 	TrfName    string  `json:"trf_name"`
 	TrfAmount  float32 `json:"trf_amount"`
-	QrPrefix   *string `json:"qr_prefix"`
-	QR         *string `json:"qr"`
+	QrPrefix   string  `json:"qr_prefix"`
+	QR         string  `json:"qr"`
 	ExpiryDate string  `json:"expiry_date"`
 }
 
