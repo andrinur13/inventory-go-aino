@@ -76,7 +76,7 @@ func GetQRStatusV2(userData *entities.Users, qrCode string) (*requests.GetQrStat
 	JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
 	LEFT JOIN ticketdet td ON td.tickdet_qr = oid2.qr
 	LEFT JOIN ticketlist tl ON tl.ticklist_tickdet_id = td.tickdet_id
-	AND oi.agent_id = ?
+	WHERE oi.agent_id = ?
 	AND oid2.qr = ?`, userData.Typeid, qrCode).Scan(&qrDetail).Error; err != nil {
 		if err.Error() == "record not found" {
 			return nil, http.StatusNotFound, "QR Code not found", "STATUS_QR_404", false
