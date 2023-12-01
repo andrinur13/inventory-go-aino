@@ -30,7 +30,6 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 	// to do:
 	// 1. check if date is minimum today
 	// 2. check if date is maximum of qr expiry date
-	// 3. add response when ota user is forbidden to redeem ticket
 
 	batchSize := 10
 	expectedResponses := len(req.QR) / batchSize
@@ -56,7 +55,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			var otaInventoryDetails []entities.OtaInventoryDetail
 
 			if err := db.DB[0].Raw(`
-			SELECT oid2.*
+			SELECT oid2.*, oi.agent_id
 			FROM ota_inventory_detail oid2
 			JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
 			WHERE oi.agent_id = ?
@@ -87,13 +86,13 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 				return
 			}
 
-			if len(otaInventoryDetails) != len(batch) {
+			if len(otaInventoryDetails) == 0 {
 				chResp <- ResponseDTO{
-					Code:        http.StatusBadRequest,
-					Message:     "QR reach maximum exceed",
-					MessageCode: "TRANSACTION_OTA_MAXIMUM",
+					Code:        http.StatusNotFound,
+					Message:     "QR not found",
+					MessageCode: "TRANSACTION_OTA_NOT_FOUND",
 					Status:      false,
-					Error:       errors.New("QR reach maximum exceed"),
+					Error:       errors.New("qr not found"),
 				}
 				return
 			}
@@ -102,6 +101,28 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			// start filtering mid
 			mids := make([]string, 0)
 			for _, item := range otaInventoryDetails {
+				if item.AgentID != userData.Typeid {
+					chResp <- ResponseDTO{
+						Code:        http.StatusForbidden,
+						Message:     "Redeem ticket forbidden",
+						MessageCode: "TRANSACTION_OTA_FORBIDDEN",
+						Status:      false,
+						Error:       errors.New("redeem ticket forbidden"),
+					}
+					return
+				}
+
+				if item.ExpiryDate.Before(time.Now()) {
+					chResp <- ResponseDTO{
+						Code:        http.StatusBadRequest,
+						Message:     "Ticket has expired",
+						MessageCode: "TRANSACTION_OTA_EXPIRED",
+						Status:      false,
+						Error:       errors.New("ticket has expired"),
+					}
+					return
+				}
+
 				mids = append(mids, item.GroupMid)
 			}
 
@@ -146,7 +167,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 								Message:     "Ticket has expired",
 								MessageCode: "TRANSACTION_OTA_EXPIRED",
 								Status:      false,
-								Error:       errors.New("Ticket has expired"),
+								Error:       errors.New("ticket has expired"),
 							}
 							return
 						}

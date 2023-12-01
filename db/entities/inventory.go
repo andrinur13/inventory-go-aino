@@ -16,6 +16,7 @@ func (OtaInventory) TableName() string {
 
 type OtaInventoryDetail struct {
 	ID             string
+	AgentID        int
 	OtaInventoryID string
 	GroupID        int
 	GroupName      string
