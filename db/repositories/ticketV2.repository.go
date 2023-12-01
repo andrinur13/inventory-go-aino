@@ -135,7 +135,7 @@ func GetQRSummaryV2(userData *entities.Users) (*requests.GetQrSummaryResponse, i
 		SUM(x.total_ticket) AS total_ticket,
 		SUM(x.redeemed_ticket) AS redeemed_ticket,
 		SUM(x.used_ticket) AS used_ticket,
-		SUM(x.total_ticket) - SUM(x.redeemed_ticket) AS total_remaining_ticket
+		SUM(x.total_ticket) - SUM(x.redeemed_ticket) AS remaining_ticket
 	FROM
 		(
 		SELECT
