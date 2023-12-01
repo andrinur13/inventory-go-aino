@@ -115,3 +115,70 @@ func GetQRStatusV2(userData *entities.Users, qrCode string) (*requests.GetQrStat
 
 	return resp, http.StatusOK, "Get QR status successfully", "STATUS_QR_200", true
 }
+
+// GetQRSummaryV2 : get qr summary
+func GetQRSummaryV2(userData *entities.Users) (*requests.GetQrSummaryResponse, int, string, string, bool) {
+	var ticketData []requests.TicketData
+
+	if err := db.DB[0].Raw(`
+	SELECT
+		x.trf_id,
+		x.trf_name,
+		x.trf_amount,
+		SUM(x.total_ticket) AS total_ticket,
+		SUM(x.redeemed_ticket) AS redeemed_ticket,
+		SUM(x.used_ticket) AS used_ticket,
+		SUM(x.total_ticket) - SUM(x.redeemed_ticket) AS total_remaining_ticket
+	FROM
+		(
+		SELECT
+				oid.trf_id,
+				oid.trf_name,
+				oid.trf_amount,
+				COUNT(oid.id) AS total_ticket,
+				COUNT(td.tickdet_id) AS redeemed_ticket,
+				CASE
+					WHEN tl.ticklist_use_date IS NOT NULL THEN COUNT(td.tickdet_id) ELSE 0
+				END AS used_ticket
+			FROM ota_inventory oi
+			LEFT JOIN ota_inventory_detail oid ON oid.ota_inventory_id = oi.id
+			LEFT JOIN ticketdet td ON td.tickdet_qr = oid.qr
+			LEFT JOIN ticketlist tl ON tl.ticklist_tickdet_id = td.tickdet_id
+			WHERE oi.agent_id = ?
+			GROUP BY
+			oid.trf_id,
+			oid.trf_name,
+			oid.trf_amount,
+			tl.ticklist_use_date
+		) x
+	GROUP BY
+		x.trf_id,
+		x.trf_name,
+		x.trf_amount
+	ORDER BY x.trf_name`, userData.Typeid).Scan(&ticketData).Error; err != nil {
+		return nil, http.StatusInternalServerError, err.Error(), "LIST_CODE_500", false
+	}
+
+	var (
+		totalTicket     int
+		redeemedTicket  int
+		remainingTicket int
+		usedTicket      int
+	)
+	for _, item := range ticketData {
+		totalTicket += item.TotalTicket
+		redeemedTicket += item.RedeemedTicket
+		remainingTicket += item.RemainingTicket
+		usedTicket += item.UsedTicket
+	}
+
+	resp := &requests.GetQrSummaryResponse{
+		TotalTicket:     totalTicket,
+		RedeemedTicket:  redeemedTicket,
+		RemainingTicket: remainingTicket,
+		UsedTicket:      usedTicket,
+		TicketData:      ticketData,
+	}
+
+	return resp, http.StatusOK, "Get ticket code list successfully", "LIST_CODE_200", true
+}

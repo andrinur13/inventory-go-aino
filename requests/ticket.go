@@ -109,3 +109,21 @@ type QrData struct {
 	VoidStatus bool   `json:"void_status"`
 	VoidDate   string `json:"void_date"`
 }
+
+type GetQrSummaryResponse struct {
+	TotalTicket     int          `json:"total_ticket"`
+	RedeemedTicket  int          `json:"redeemed_ticket"`
+	RemainingTicket int          `json:"remaining_ticket"`
+	UsedTicket      int          `json:"used_ticket"`
+	TicketData      []TicketData `json:"ticket_data"`
+}
+
+type TicketData struct {
+	TrfID           int    `json:"trf_id"`
+	TrfName         string `json:"trf_name"`
+	TrfAmount       int    `json:"trf_amount"`
+	TotalTicket     int    `json:"total_ticket"`
+	RedeemedTicket  int    `json:"redeemed_ticket"`
+	RemainingTicket int    `json:"remaining_ticket"`
+	UsedTicket      int    `json:"used_ticket"`
+}

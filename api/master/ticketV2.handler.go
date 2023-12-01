@@ -24,6 +24,7 @@ func TicketRouterV2(r *gin.RouterGroup, permission middleware.Permission, cacheM
 		ticket.POST("/redeem", permission.Set("PERMISSION_MASTER_USER_SAVE", RedeemTicketV2))
 		ticket.GET("/qr", permission.Set("PERMISSION_MASTER_USER_SAVE", GetQR))
 		ticket.GET("/qr/status/:qr_code", permission.Set("PERMISSION_MASTER_USER_SAVE", GetQRStatus))
+		ticket.GET("/qr/summary", permission.Set("PERMISSION_MASTER_USER_SAVE", GetQRSummary))
 	}
 }
 
@@ -109,4 +110,17 @@ func GetQRStatus(c *gin.Context) {
 
 	c.JSON(code, builder.ApiResponseData(code, msg, msgCode, result))
 	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{}), string(in))
+}
+
+// GetQRSummary : get qr summary
+func GetQRSummary(c *gin.Context) {
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	result, code, msg, msgCode, status := repositories.GetQRSummaryV2(userData)
+
+	c.JSON(code, builder.ApiResponseData(code, msg, msgCode, result))
+	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{}), string("no request"))
 }
