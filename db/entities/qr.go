@@ -30,4 +30,5 @@ type QrDetail struct {
 	ExpiryDate      time.Time
 	VoidStatus      bool
 	VoidDate        time.Time
+	UseDate         time.Time
 }

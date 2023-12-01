@@ -70,9 +70,12 @@ func GetQRStatusV2(userData *entities.Users, qrCode string) (*requests.GetQrStat
 		oid2.redeem_date,
 		oid2.expiry_date,
 		case when oid2.void_date is not null then true else false end as void_status,
-		oid2.void_date
+		oid2.void_date,
+		tl.ticklist_use_date as use_date
 	FROM ota_inventory_detail oid2
 	JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
+	LEFT JOIN ticketdet td ON td.tickdet_qr = oid2.qr
+	LEFT JOIN ticketlist tl ON tl.ticklist_tickdet_id = td.tickdet_id
 	AND oi.agent_id = ?
 	AND oid2.qr = ?`, userData.Typeid, qrCode).Scan(&qrDetail).Error; err != nil {
 		if err.Error() == "record not found" {
@@ -104,6 +107,10 @@ func GetQRStatusV2(userData *entities.Users, qrCode string) (*requests.GetQrStat
 
 	if !qrDetail.VoidDate.IsZero() {
 		qrData.VoidDate = qrDetail.VoidDate.Format("2006-01-02 15:04:05")
+	}
+
+	if !qrDetail.UseDate.IsZero() {
+		qrData.UseDate = qrDetail.UseDate.Format("2006-01-02 15:04:05")
 	}
 
 	resp := &requests.GetQrStatusResponse{

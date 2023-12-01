@@ -108,6 +108,7 @@ type QrData struct {
 	ExpiryDate string `json:"expiry_date"`
 	VoidStatus bool   `json:"void_status"`
 	VoidDate   string `json:"void_date"`
+	UseDate    string `json:"use_date"`
 }
 
 type GetQrSummaryResponse struct {
