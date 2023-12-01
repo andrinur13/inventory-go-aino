@@ -27,6 +27,11 @@ type ResponseDTO struct {
 func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[string]interface{}, int, string, string, bool) {
 	resp := make(map[string]interface{}, 0)
 
+	// to do:
+	// 1. check if date is minimum today
+	// 2. check if date is maximum of qr expiry date
+	// 3. add response when ota user is forbidden to redeem ticket
+
 	batchSize := 10
 	expectedResponses := len(req.QR) / batchSize
 	if len(req.QR)%batchSize != 0 {

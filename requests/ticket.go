@@ -90,3 +90,22 @@ type GetQrResponse struct {
 	RemainingTicket int               `json:"remaining_ticket"`
 	QrData          []entities.QrItem `json:"qr_data"`
 }
+
+type GetQrStatusResponse struct {
+	InventoryNumber string `json:"inventory_number"`
+	PksNo           string `json:"pks_no"`
+	AgentName       string `json:"agent_name"`
+	QrData          QrData `json:"qr_data"`
+}
+
+type QrData struct {
+	TrfID      int    `json:"trf_id"`
+	TrfName    string `json:"trf_name"`
+	TrfAmount  int    `json:"trf_amount"`
+	QR         string `json:"qr"`
+	CreatedAt  string `json:"created_at"`
+	RedeemDate string `json:"redeem_date"`
+	ExpiryDate string `json:"expiry_date"`
+	VoidStatus bool   `json:"void_status"`
+	VoidDate   string `json:"void_date"`
+}

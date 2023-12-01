@@ -23,6 +23,7 @@ func TicketRouterV2(r *gin.RouterGroup, permission middleware.Permission, cacheM
 	{
 		ticket.POST("/redeem", permission.Set("PERMISSION_MASTER_USER_SAVE", RedeemTicketV2))
 		ticket.GET("/qr", permission.Set("PERMISSION_MASTER_USER_SAVE", GetQR))
+		ticket.GET("/qr/status/:qr_code", permission.Set("PERMISSION_MASTER_USER_SAVE", GetQRStatus))
 	}
 }
 
@@ -77,6 +78,34 @@ func GetQR(c *gin.Context) {
 	userData := middleware.Decode(split[1])
 
 	result, code, msg, msgCode, status := repositories.GetQRV2(userData, query)
+
+	c.JSON(code, builder.ApiResponseData(code, msg, msgCode, result))
+	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{}), string(in))
+}
+
+// GetQRStatus : get qr status
+func GetQRStatus(c *gin.Context) {
+	qrCode := c.Param("qr_code")
+
+	if qrCode == "" {
+		c.JSON(http.StatusBadRequest, builder.ApiResponse(false, "QR Code is required", "400", nil))
+		logger.Warning("QR Code is required", "400", false, fmt.Sprintf("%+v", map[string]interface{}{}))
+		return
+	}
+
+	in, err := json.Marshal(qrCode)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, builder.ApiResponse(false, err.Error(), "400", nil))
+		logger.Warning(err.Error(), "400", false, fmt.Sprintf("%+v", qrCode))
+		return
+	}
+
+	tokenString := c.Request.Header.Get("Authorization")
+	split := strings.Split(tokenString, " ")
+
+	userData := middleware.Decode(split[1])
+
+	result, code, msg, msgCode, status := repositories.GetQRStatusV2(userData, qrCode)
 
 	c.JSON(code, builder.ApiResponseData(code, msg, msgCode, result))
 	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{}), string(in))

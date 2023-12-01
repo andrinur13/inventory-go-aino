@@ -1,5 +1,7 @@
 package entities
 
+import "time"
+
 type QrAggregate struct {
 	TotalTicket     int
 	RedeemedTicket  int
@@ -13,4 +15,19 @@ type QrItem struct {
 	QrPrefix   *string
 	QR         *string
 	ExpiryDate string
+}
+
+type QrDetail struct {
+	InventoryNumber string
+	PksNo           string
+	AgentName       string
+	TrfID           int
+	TrfName         string
+	TrfAmount       int
+	QR              string
+	CreatedAt       time.Time
+	RedeemDate      time.Time
+	ExpiryDate      time.Time
+	VoidStatus      bool
+	VoidDate        time.Time
 }
