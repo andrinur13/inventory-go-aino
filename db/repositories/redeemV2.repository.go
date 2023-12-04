@@ -52,6 +52,37 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 		go func(batch []string) {
 			defer wg.Done()
 
+			var checkOtaInventoryDetails []entities.OtaInventoryDetail
+
+			if err := db.DB[0].Raw(`
+			SELECT oid2.*
+			FROM ota_inventory_detail oid2
+			JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
+			WHERE oi.agent_id = ?
+			AND oid2.qr IN (?)
+			LIMIT ?`, userData.Typeid, batch, len(batch)).
+				Scan(&checkOtaInventoryDetails).Error; err != nil {
+				chResp <- ResponseDTO{
+					Code:        http.StatusInternalServerError,
+					Message:     err.Error(),
+					MessageCode: "TRANSACTION_OTA_FAILED",
+					Status:      false,
+					Error:       err,
+				}
+				return
+			}
+
+			if len(checkOtaInventoryDetails) > 0 {
+				chResp <- ResponseDTO{
+					Code:        http.StatusBadRequest,
+					Message:     "QR has been redeemed",
+					MessageCode: "TRANSACTION_OTA_REDEEMED",
+					Status:      false,
+					Error:       errors.New("qr has been redeemed"),
+				}
+				return
+			}
+
 			var otaInventoryDetails []entities.OtaInventoryDetail
 
 			if err := db.DB[0].Raw(`
