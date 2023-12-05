@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 	"twc-ota-api/db"
@@ -47,11 +49,11 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 
 		batch := req.QR[start:end]
 
-		// start fetching ota inventory details by given qr
 		wg.Add(1)
 		go func(batch []string) {
 			defer wg.Done()
 
+			// checking if qr is not redeemed
 			var checkOtaInventoryDetails []entities.OtaInventoryDetail
 
 			if err := db.DB[0].Raw(`
@@ -82,7 +84,18 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 				}
 				return
 			}
+			// end checking if qr is not redeemed
 
+			// start sanitize qr prefix
+			sort.Strings(batch)
+			qrPrefixes := make([]string, 0)
+			for _, item := range batch {
+				qrPrefix := strings.Split(item, "-")
+				qrPrefixes = append(qrPrefixes, fmt.Sprintf("%s-%s-", qrPrefix[0], qrPrefix[1]))
+			}
+			// end sanitize qr prefix
+
+			// start fetching ota inventory details by given qr
 			var otaInventoryDetails []entities.OtaInventoryDetail
 
 			if err := db.DB[0].Raw(`
@@ -95,17 +108,9 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			AND (
 				(oid2.qr IN (?))
 				OR
-				(
-					oid2.qr IS NULL AND oid2.qr_prefix = ANY (
-						SELECT
-							split_part(element, '-', 1) || '-' || split_part(element, '-', 2) || '-'
-						FROM unnest(
-							ARRAY[?] -- Replace with your array variable
-						) AS element
-					)
-				)
+				(oid2.qr IS NULL AND oid2.qr_prefix IN (?))
 			)
-			LIMIT ?`, userData.Typeid, batch, batch, len(batch)).
+			LIMIT ?`, userData.Typeid, batch, qrPrefixes, len(batch)).
 				Scan(&otaInventoryDetails).Error; err != nil {
 				chResp <- ResponseDTO{
 					Code:        http.StatusInternalServerError,
