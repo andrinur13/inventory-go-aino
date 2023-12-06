@@ -151,6 +151,17 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 					}
 					return
 				}
+
+				if len(otaInventoryDetails) < qrPrefix.Count {
+					chResp <- ResponseDTO{
+						Code:        http.StatusBadRequest,
+						Message:     "QR maximum exceeded",
+						MessageCode: "TRANSACTION_OTA_MAX_EXCEEDED",
+						Status:      false,
+						Error:       errors.New("qr not match"),
+					}
+					return
+				}
 				// end fetching ota inventory details by given qr
 
 				// start filtering mid
