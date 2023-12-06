@@ -158,7 +158,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 						Message:     "QR maximum exceeded",
 						MessageCode: "TRANSACTION_OTA_MAX_EXCEEDED",
 						Status:      false,
-						Error:       errors.New("qr not match"),
+						Error:       errors.New("qr maximum exceeded"),
 					}
 					return
 				}
