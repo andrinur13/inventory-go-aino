@@ -62,8 +62,9 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 		return resp, http.StatusBadRequest, err.Error(), "TRANSACTION_OTA_DATE_INVALID", false
 	}
 
-	if visitDate.Before(time.Now()) {
-		return resp, http.StatusBadRequest, "Visit date must be greater than today", "TRANSACTION_OTA_DATE_INVALID", false
+	today := time.Now().Truncate(24 * time.Hour)
+	if visitDate.Before(today) {
+		return resp, http.StatusBadRequest, "Visit date must be today or later", "TRANSACTION_OTA_DATE_INVALID", false
 	}
 
 	sort.Strings(req.QR)
