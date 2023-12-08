@@ -898,7 +898,9 @@ func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, stri
 								mconfig_value ->> 'cs_wa_no' as cs_wa_no,
 								mconfig_value ->> 'cs_email' as cs_email,
 								mconfig_value ->> 'privacy_policy' as privacy_policy,
-								mconfig_value ->> 'term_condition' as term_condition`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error;
+								mconfig_value ->> 'term_condition' as term_condition,
+								mconfig_value ->> 'child_age' as child_age,
+								mconfig_value ->> 'adult_age' as adult_age`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error;
 
 	//If Connection refused
 	if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError"){
@@ -911,7 +913,9 @@ func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, stri
 								mconfig_value ->> 'cs_wa_no' as cs_wa_no,
 								mconfig_value ->> 'cs_email' as cs_email,
 								mconfig_value ->> 'privacy_policy' as privacy_policy,
-								mconfig_value ->> 'term_condition' as term_condition`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error;
+								mconfig_value ->> 'term_condition' as term_condition,
+								mconfig_value ->> 'child_age' as child_age,
+								mconfig_value ->> 'adult_age' as adult_age`).Where("mobile_config.mconfig_deleted_at is null AND mobile_config.mconfig_src_type = 7").Order("mconfig_created_at").Limit(1).Find(&mconfigs).Error;
 				if (err != nil) && (reflect.TypeOf(err).String() == "*net.OpError") {
 					fmt.Printf("Hitback(%d)%v \n", i, err)
 					time.Sleep(3 * time.Second)
@@ -943,6 +947,8 @@ func GetAppConfig(token *entities.Users) (*[]entities.MconfigValue, string, stri
 			CsEmail:    	mconfig.CsEmail,
 			PrivacyPolicy:  mconfig.PrivacyPolicy,
 			TermCondition:  mconfig.TermCondition,
+			ChildAge:  		mconfig.ChildAge,
+			AdultAge:  		mconfig.AdultAge,
 		}
 
 		dataMconfig = append(dataMconfig, tmpMconfigValue)

@@ -23,6 +23,8 @@ type MconfigValue struct {
 	CsEmail    		string `json:"cs_email"`
 	PrivacyPolicy   string `json:"privacy_policy"`
 	TermCondition   string `json:"term_condition"`
+	ChildAge  		string `json:"child_age"`
+	AdultAge  		string `json:"adult_age"`
 }
 
 func (MconfigValue) TableName() string {
