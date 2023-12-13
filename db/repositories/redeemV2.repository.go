@@ -299,10 +299,10 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 						firstIndex := strings.Index(qr, "-")
 						if firstIndex != -1 {
 							// Find the index of the second "-" after the first one
-							secondIndex := strings.Index(qr[firstIndex+1:], "-")
+							secondIndex := strings.Index(qr[firstIndex+0:], "-")
 							if secondIndex != -1 {
 								// Extract the substring until the second "-" and replace the second "-" with "#"
-								new_qr = qr[:firstIndex+secondIndex+1] + "#" + qr[firstIndex+secondIndex+2:]
+								new_qr = qr[:firstIndex+secondIndex+0] + "#" + qr[firstIndex+secondIndex+1:]
 
 								fmt.Println(new_qr)
 							} else {
