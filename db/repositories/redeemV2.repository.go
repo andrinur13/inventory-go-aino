@@ -450,25 +450,6 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 					for _, item := range qrData {
 						newTickdetID := uuid.NewV4()
 
-						qr := item.QR
-						new_qr := ""
-
-						firstIndex := strings.Index(qr, "-")
-						if firstIndex != -1 {
-							// Find the index of the second "-" after the first one
-							secondIndex := strings.Index(qr[firstIndex+0:], "-")
-							if secondIndex != -1 {
-								// Extract the substring until the second "-" and replace the second "-" with "#"
-								new_qr = qr[:firstIndex+secondIndex+0] + "#" + qr[firstIndex+secondIndex+1:]
-
-								fmt.Println(new_qr)
-							} else {
-								fmt.Println("String does not have enough '-' characters.")
-							}
-						} else {
-							fmt.Println("String does not have enough '-' characters.")
-						}
-
 						// start creating new tickdet
 						newTickDet := entities.TickDetModel{
 							Tickdet_id:      newTickdetID,
@@ -478,7 +459,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 							Tickdet_amount:  item.TrfAmount,
 							Tickdet_qty:     1,
 							Tickdet_total:   item.TrfAmount,
-							Tickdet_qr:      new_qr,
+							Tickdet_qr:      item.QR,
 							Ext:             `{"void": {"status": false}, "refund": {"status": false}, "cashback": {"status": false}, "nationality": "ID"}`,
 						}
 
