@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"sort"
 	"strings"
 	"sync"
@@ -100,14 +101,49 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			AND oid2.redeem_date IS NOT NULL
 			LIMIT ?`, userData.Typeid, batch, len(batch)).
 				Scan(&checkOtaInventoryDetails).Error; err != nil {
-				chResp <- ResponseDTO{
-					Code:        http.StatusInternalServerError,
-					Message:     err.Error(),
-					MessageCode: "TRANSACTION_OTA_FAILED",
-					Status:      false,
-					Error:       err,
+				if reflect.TypeOf(err).String() == "*net.OpError" {
+					fmt.Printf("%v \n", err.Error())
+					fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+					for i := 0; i < 4; i++ {
+						err = db.DB[0].Raw(`
+						SELECT oid2.*
+						FROM ota_inventory_detail oid2
+						JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
+						WHERE oi.agent_id = ?
+						AND oid2.qr IN (?)
+						AND oid2.redeem_date IS NOT NULL
+						LIMIT ?`, userData.Typeid, batch, len(batch)).
+							Scan(&checkOtaInventoryDetails).Error
+						if reflect.TypeOf(err).String() == "*net.OpError" {
+							fmt.Printf("Hitback(%d)%v \n", i, err)
+							time.Sleep(3 * time.Second)
+							continue
+						}
+						break
+					}
+
+					if err != nil {
+						if reflect.TypeOf(err).String() == "*net.OpError" {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+						} else {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     err.Error(),
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+						}
+						return
+					}
 				}
-				return
 			}
 
 			if len(checkOtaInventoryDetails) > 0 {
@@ -132,14 +168,41 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			}()
 
 			if err := tx.Error; err != nil {
-				chResp <- ResponseDTO{
-					Code:        http.StatusInternalServerError,
-					Message:     err.Error(),
-					MessageCode: "TRANSACTION_OTA_FAILED",
-					Status:      false,
-					Error:       err,
+				if reflect.TypeOf(err).String() == "*net.OpError" {
+					fmt.Printf("%v \n", err.Error())
+					fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+					for i := 0; i < 4; i++ {
+						err = db.DB[0].Begin().Error
+						if reflect.TypeOf(err).String() == "*net.OpError" {
+							fmt.Printf("Hitback(%d)%v \n", i, err)
+							time.Sleep(3 * time.Second)
+							continue
+						}
+						break
+					}
+
+					if err != nil {
+						if reflect.TypeOf(err).String() == "*net.OpError" {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+						} else {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     err.Error(),
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+						}
+						return
+					}
 				}
-				return
 			}
 
 			qrPrefixes := constructQrPrefix(batch)
@@ -161,14 +224,54 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 				)
 				LIMIT ?`, userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count).
 					Scan(&otaInventoryDetails).Error; err != nil {
-					chResp <- ResponseDTO{
-						Code:        http.StatusInternalServerError,
-						Message:     err.Error(),
-						MessageCode: "TRANSACTION_OTA_FAILED",
-						Status:      false,
-						Error:       err,
+					if reflect.TypeOf(err).String() == "*net.OpError" {
+						fmt.Printf("%v \n", err.Error())
+						fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+						for i := 0; i < 4; i++ {
+							err = tx.Raw(`
+							SELECT oid2.*
+							FROM ota_inventory_detail oid2
+							JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
+							WHERE oi.agent_id = ?
+							AND oid2.redeem_date IS NULL
+							AND oid2.void_date IS NULL
+							AND (
+								(oid2.qr IN (?))
+								OR
+								((oid2.qr IS NULL OR oid2.qr = '') AND oid2.qr_prefix = ?)
+							)
+							LIMIT ?`, userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count).
+								Scan(&otaInventoryDetails).Error
+							if reflect.TypeOf(err).String() == "*net.OpError" {
+								fmt.Printf("Hitback(%d)%v \n", i, err)
+								time.Sleep(3 * time.Second)
+								continue
+							}
+							break
+						}
+
+						if err != nil {
+							if reflect.TypeOf(err).String() == "*net.OpError" {
+								chResp <- ResponseDTO{
+									Code:        http.StatusInternalServerError,
+									Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+									MessageCode: "TRANSACTION_OTA_FAILED",
+									Status:      false,
+									Error:       err,
+								}
+							} else {
+								chResp <- ResponseDTO{
+									Code:        http.StatusInternalServerError,
+									Message:     err.Error(),
+									MessageCode: "TRANSACTION_OTA_FAILED",
+									Status:      false,
+									Error:       err,
+								}
+							}
+							return
+						}
 					}
-					return
 				}
 
 				if len(otaInventoryDetails) == 0 {
@@ -239,14 +342,41 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 							otaInventoryDetail.RedeemDate = &now
 
 							if err := tx.Save(&otaInventoryDetail).Error; err != nil {
-								chResp <- ResponseDTO{
-									Code:        http.StatusInternalServerError,
-									Message:     err.Error(),
-									MessageCode: "TRANSACTION_OTA_FAILED",
-									Status:      false,
-									Error:       err,
+								if reflect.TypeOf(err).String() == "*net.OpError" {
+									fmt.Printf("%v \n", err.Error())
+									fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+									for i := 0; i < 4; i++ {
+										err = tx.Save(&otaInventoryDetail).Error
+										if reflect.TypeOf(err).String() == "*net.OpError" {
+											fmt.Printf("Hitback(%d)%v \n", i, err)
+											time.Sleep(3 * time.Second)
+											continue
+										}
+										break
+									}
+
+									if err != nil {
+										if reflect.TypeOf(err).String() == "*net.OpError" {
+											chResp <- ResponseDTO{
+												Code:        http.StatusInternalServerError,
+												Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+												MessageCode: "TRANSACTION_OTA_FAILED",
+												Status:      false,
+												Error:       err,
+											}
+										} else {
+											chResp <- ResponseDTO{
+												Code:        http.StatusInternalServerError,
+												Message:     err.Error(),
+												MessageCode: "TRANSACTION_OTA_FAILED",
+												Status:      false,
+												Error:       err,
+											}
+										}
+										return
+									}
 								}
-								return
 							}
 
 							qrData = append(qrData, otaInventoryDetail)
@@ -278,14 +408,41 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 					}
 
 					if err := tx.Create(&newTicket).Error; err != nil {
-						chResp <- ResponseDTO{
-							Code:        http.StatusInternalServerError,
-							Message:     err.Error(),
-							MessageCode: "TRANSACTION_OTA_FAILED",
-							Status:      false,
-							Error:       err,
+						if reflect.TypeOf(err).String() == "*net.OpError" {
+							fmt.Printf("%v \n", err.Error())
+							fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+							for i := 0; i < 4; i++ {
+								err = tx.Create(&newTicket).Error
+								if reflect.TypeOf(err).String() == "*net.OpError" {
+									fmt.Printf("Hitback(%d)%v \n", i, err)
+									time.Sleep(3 * time.Second)
+									continue
+								}
+								break
+							}
+
+							if err != nil {
+								if reflect.TypeOf(err).String() == "*net.OpError" {
+									chResp <- ResponseDTO{
+										Code:        http.StatusInternalServerError,
+										Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+										MessageCode: "TRANSACTION_OTA_FAILED",
+										Status:      false,
+										Error:       err,
+									}
+								} else {
+									chResp <- ResponseDTO{
+										Code:        http.StatusInternalServerError,
+										Message:     err.Error(),
+										MessageCode: "TRANSACTION_OTA_FAILED",
+										Status:      false,
+										Error:       err,
+									}
+								}
+								return
+							}
 						}
-						return
 					}
 					// end initialize new ticket
 
@@ -326,14 +483,41 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 						}
 
 						if err := tx.Create(&newTickDet).Error; err != nil {
-							chResp <- ResponseDTO{
-								Code:        http.StatusInternalServerError,
-								Message:     err.Error(),
-								MessageCode: "TRANSACTION_OTA_FAILED",
-								Status:      false,
-								Error:       err,
+							if reflect.TypeOf(err).String() == "*net.OpError" {
+								fmt.Printf("%v \n", err.Error())
+								fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+								for i := 0; i < 4; i++ {
+									err = tx.Create(&newTickDet).Error
+									if reflect.TypeOf(err).String() == "*net.OpError" {
+										fmt.Printf("Hitback(%d)%v \n", i, err)
+										time.Sleep(3 * time.Second)
+										continue
+									}
+									break
+								}
+
+								if err != nil {
+									if reflect.TypeOf(err).String() == "*net.OpError" {
+										chResp <- ResponseDTO{
+											Code:        http.StatusInternalServerError,
+											Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+											MessageCode: "TRANSACTION_OTA_FAILED",
+											Status:      false,
+											Error:       err,
+										}
+									} else {
+										chResp <- ResponseDTO{
+											Code:        http.StatusInternalServerError,
+											Message:     err.Error(),
+											MessageCode: "TRANSACTION_OTA_FAILED",
+											Status:      false,
+											Error:       err,
+										}
+									}
+									return
+								}
 							}
-							return
 						}
 						// end creating new tickdet
 
@@ -349,14 +533,50 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 						JOIN master_group mg ON mg.group_id = mt3.mtick_group_id
 						WHERE mt.trf_id = ?
 						`, item.TrfID).Scan(&ticktlistAdditions).Error; err != nil {
-							chResp <- ResponseDTO{
-								Code:        http.StatusInternalServerError,
-								Message:     err.Error(),
-								MessageCode: "TRANSACTION_OTA_FAILED",
-								Status:      false,
-								Error:       err,
+							if reflect.TypeOf(err).String() == "*net.OpError" {
+								fmt.Printf("%v \n", err.Error())
+								fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+								for i := 0; i < 4; i++ {
+									err = tx.Raw(`
+									SELECT
+										mt2.trfdet_mtick_id,
+										mg.group_mid
+									FROM master_tariff mt
+									JOIN master_tariffdet mt2 ON mt2.trfdet_trf_id = mt.trf_id
+									JOIN master_ticket mt3 ON mt3.mtick_id = mt2.trfdet_mtick_id
+									JOIN master_group mg ON mg.group_id = mt3.mtick_group_id
+									WHERE mt.trf_id = ?
+									`, item.TrfID).Scan(&ticktlistAdditions).Error
+									if reflect.TypeOf(err).String() == "*net.OpError" {
+										fmt.Printf("Hitback(%d)%v \n", i, err)
+										time.Sleep(3 * time.Second)
+										continue
+									}
+									break
+								}
+
+								if err != nil {
+									if reflect.TypeOf(err).String() == "*net.OpError" {
+										chResp <- ResponseDTO{
+											Code:        http.StatusInternalServerError,
+											Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+											MessageCode: "TRANSACTION_OTA_FAILED",
+											Status:      false,
+											Error:       err,
+										}
+									} else {
+										chResp <- ResponseDTO{
+											Code:        http.StatusInternalServerError,
+											Message:     err.Error(),
+											MessageCode: "TRANSACTION_OTA_FAILED",
+											Status:      false,
+											Error:       err,
+										}
+									}
+									return
+								}
 							}
-							return
 						}
 						// end fetching ticklist addition by given trf id
 
@@ -383,14 +603,41 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 							}
 
 							if err := tx.Create(&newTickList).Error; err != nil {
-								chResp <- ResponseDTO{
-									Code:        http.StatusInternalServerError,
-									Message:     err.Error(),
-									MessageCode: "TRANSACTION_OTA_FAILED",
-									Status:      false,
-									Error:       err,
+								if reflect.TypeOf(err).String() == "*net.OpError" {
+									fmt.Printf("%v \n", err.Error())
+									fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+									for i := 0; i < 4; i++ {
+										err = tx.Create(&newTickList).Error
+										if reflect.TypeOf(err).String() == "*net.OpError" {
+											fmt.Printf("Hitback(%d)%v \n", i, err)
+											time.Sleep(3 * time.Second)
+											continue
+										}
+										break
+									}
+
+									if err != nil {
+										if reflect.TypeOf(err).String() == "*net.OpError" {
+											chResp <- ResponseDTO{
+												Code:        http.StatusInternalServerError,
+												Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+												MessageCode: "TRANSACTION_OTA_FAILED",
+												Status:      false,
+												Error:       err,
+											}
+										} else {
+											chResp <- ResponseDTO{
+												Code:        http.StatusInternalServerError,
+												Message:     err.Error(),
+												MessageCode: "TRANSACTION_OTA_FAILED",
+												Status:      false,
+												Error:       err,
+											}
+										}
+										return
+									}
 								}
-								return
 							}
 						}
 						// end creating new ticklist
@@ -401,14 +648,41 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			}
 
 			if err := tx.Commit().Error; err != nil {
-				chResp <- ResponseDTO{
-					Code:        http.StatusInternalServerError,
-					Message:     err.Error(),
-					MessageCode: "TRANSACTION_OTA_FAILED",
-					Status:      false,
-					Error:       err,
+				if reflect.TypeOf(err).String() == "*net.OpError" {
+					fmt.Printf("%v \n", err.Error())
+					fmt.Printf("%v \n", reflect.TypeOf(err).String())
+
+					for i := 0; i < 4; i++ {
+						err = tx.Commit().Error
+						if reflect.TypeOf(err).String() == "*net.OpError" {
+							fmt.Printf("Hitback(%d)%v \n", i, err)
+							time.Sleep(3 * time.Second)
+							continue
+						}
+						break
+					}
+
+					if err != nil {
+						if reflect.TypeOf(err).String() == "*net.OpError" {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     "Your database connection was broken. Please contact your administrator to fix this problem. Thank you.",
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+						} else {
+							chResp <- ResponseDTO{
+								Code:        http.StatusInternalServerError,
+								Message:     err.Error(),
+								MessageCode: "TRANSACTION_OTA_FAILED",
+								Status:      false,
+								Error:       err,
+							}
+						}
+						return
+					}
 				}
-				return
 			}
 
 			chResp <- ResponseDTO{Error: nil}
