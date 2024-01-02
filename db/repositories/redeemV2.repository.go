@@ -69,7 +69,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 	}
 
 	sort.Strings(req.QR)
-	batchSize := 10
+	batchSize := 100
 	expectedResponses := len(req.QR) / batchSize
 	if len(req.QR)%batchSize != 0 {
 		expectedResponses++
