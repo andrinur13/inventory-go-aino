@@ -12,7 +12,7 @@ import (
 
 var version = "1.6.1"
 
-//Logger : logging function
+// Logger : logging function
 func Logger() {
 	// path := "logs"
 	// if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -68,6 +68,19 @@ func Warning(message string, code string, status bool, req string) (response *st
 		"code":    code,
 		"version": version,
 	}).Warning(message)
+
+	return nil
+}
+
+func Error(message string, code string, status bool, req string, err error) (response *string) {
+	Logger()
+	logrus.WithFields(logrus.Fields{
+		"error":   err,
+		"request": req,
+		"success": false,
+		"code":    code,
+		"version": version,
+	}).Error(message)
 
 	return nil
 }
