@@ -176,7 +176,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			// start fetching ota inventory details by given qr
 			var otaInventoryDetails []entities.OtaInventoryDetail
 
-			if err := db.DB[0].Raw(`
+			if err := tx.Raw(`
 			SELECT oid2.*
 			FROM ota_inventory_detail oid2
 			JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
