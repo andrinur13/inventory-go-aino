@@ -15,14 +15,24 @@
     {
       "name": "db_trx_twc",
       "driver_name":"postgres",
+<<<<<<< HEAD
       "connection_string":"postgres://engine_ticket:2Du9te3QxrZ9y3Bq@127.0.0.1:5432/db_trx_twc?sslmode=disable&application_name=TICKETING-OTA-TWC",
       "max_connection_open":20
+=======
+      "connection_string":"postgres://engine_ticket:2Du9te3QxrZ9y3Bq@localhost:5432/db_trx_twc_dev?sslmode=disable&application_name=TICKETING-OTA-TWC",
+      "max_connection_open":100
+>>>>>>> 003cf1ce4e82a45ad8c2408775bfc296bfbf8584
     },
     {
       "name": "db_master_twc",
       "driver_name":"postgres",
+<<<<<<< HEAD
       "connection_string":"postgres://pds_twc:vn6LL68A8AsbmeEj@127.0.0.1:5432/db_master_twc?sslmode=disable&application_name=TICKETING-OTA-TWC",
       "max_connection_open":20
+=======
+      "connection_string":"postgres://pds_twc:vn6LL68A8AsbmeEj@localhost:5432/db_master_twc_dev?sslmode=disable&application_name=TICKETING-OTA-TWC",
+      "max_connection_open":100
+>>>>>>> 003cf1ce4e82a45ad8c2408775bfc296bfbf8584
     }
   ]
 }
