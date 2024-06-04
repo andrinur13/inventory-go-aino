@@ -107,6 +107,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 						time.Sleep(3 * time.Second)
 						continue
 					} else {
+						logger.Info(fmt.Sprintf("Hitback fetching ota inventory details successfully: %d...", i+1), "200", true, "", fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}))
 						break
 					}
 				}
@@ -131,44 +132,6 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			return resp, http.StatusBadRequest, fmt.Sprintf("QR %s has been redeemed", checkOtaInventoryDetails[0].QR), "TRANSACTION_OTA_REDEEMED", false
 		}
 		// end checking if qr is not redeemed
-
-		// start database transaction
-		// tx := db.DB[0].Begin()
-		// defer func() {
-		// 	if r := recover(); r != nil {
-		// 		logger.Error("Database Transaction Rollback", "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), errors.New("database transaction rollback"))
-		// 		db.DB[0].Rollback()
-		// 	}
-		// }()
-
-		// if err := db.DB[0].Error; err != nil {
-		// 	logger.Error("Error when starting database transaction", "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-		// 	if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-		// 		for i := 0; i < maxRetry; i++ {
-		// 			err = db.DB[0].Begin().Error
-		// 			if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-		// 				logger.Error(fmt.Sprintf("Hitback starting database transaction: %d...", i+1), "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-		// 				time.Sleep(3 * time.Second)
-		// 				continue
-		// 			} else {
-		// 				break
-		// 			}
-		// 		}
-
-		// 		if err != nil {
-		// 			logger.Error("Error when hitback starting database transaction", "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-
-		// 			msg := err.Error()
-		// 			if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-		// 				msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-		// 			}
-
-		// 			return resp, http.StatusInternalServerError, msg, "TRANSACTION_OTA_FAILED", false
-		// 		}
-		// 	} else {
-		// 		return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		// 	}
-		// }
 
 		qrPrefixes := constructQrPrefix(batch)
 
@@ -212,6 +175,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 							time.Sleep(3 * time.Second)
 							continue
 						} else {
+							logger.Info(fmt.Sprintf("Hitback fetching ota inventory details successfully: %d...", i+1), "200", true, "", fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count))
 							break
 						}
 					}
@@ -290,6 +254,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 										time.Sleep(3 * time.Second)
 										continue
 									} else {
+										logger.Info(fmt.Sprintf("Hitback updating ota inventory detail successfully: %d...", i+1), "200", true, "", fmt.Sprintf("%+v", otaInventoryDetail))
 										break
 									}
 								}
@@ -349,6 +314,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 								time.Sleep(3 * time.Second)
 								continue
 							} else {
+								logger.Info(fmt.Sprintf("Hitback creating new ticket successfully: %d...", i+1), "200", true, "", fmt.Sprintf("%+v", newTicket))
 								break
 							}
 						}
@@ -398,6 +364,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 									time.Sleep(3 * time.Second)
 									continue
 								} else {
+									logger.Info(fmt.Sprintf("Hitback creating new tickdet successfully: %d...", i+1), "200", true, "", fmt.Sprintf("%+v", newTickDet))
 									break
 								}
 							}
@@ -448,6 +415,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 									time.Sleep(3 * time.Second)
 									continue
 								} else {
+									logger.Info(fmt.Sprintf("Hitback fetching ticklist addition by given trf id successfully: %d...", i+1), "200", true, "", fmt.Sprintf("trf_id: %d", item.TrfID))
 									break
 								}
 							}
@@ -496,6 +464,7 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 										time.Sleep(3 * time.Second)
 										continue
 									} else {
+										logger.Info(fmt.Sprintf("Hitback creating new ticklist successfully: %d...", i+1), "200", true, "", fmt.Sprintf("%+v", newTickList))
 										break
 									}
 								}
@@ -521,35 +490,6 @@ func RedeemTicketV2(userData *entities.Users, req *requests.RedeemReqV2) (map[st
 			}
 			// end main process
 		}
-
-		// if err := tx.Commit().Error; err != nil {
-		// 	logger.Error("Error when committing database transaction", "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-		// 	if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-		// 		for i := 0; i < maxRetry; i++ {
-		// 			err = tx.Commit().Error
-		// 			if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-		// 				logger.Error(fmt.Sprintf("Hitback committing database transaction: %d...", i+1), "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-		// 				time.Sleep(3 * time.Second)
-		// 				continue
-		// 			} else {
-		// 				break
-		// 			}
-		// 		}
-
-		// 		if err != nil {
-		// 			logger.Error("Error when hitback committing database transaction", "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-
-		// 			msg := err.Error()
-		// 			if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-		// 				msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-		// 			}
-
-		// 			return resp, http.StatusInternalServerError, msg, "TRANSACTION_OTA_FAILED", false
-		// 		}
-		// 	} else {
-		// 		return resp, http.StatusInternalServerError, err.Error(), "TRANSACTION_OTA_FAILED", false
-		// 	}
-		// }
 	}
 
 	return resp, http.StatusOK, "Transaction success", "TRANSACTION_OTA_SUCCESS", true
