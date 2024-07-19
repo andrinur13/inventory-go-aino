@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"go.elastic.co/apm/module/apmgin/v2"
 
 	_ "twc-ota-api/docs"
 )
@@ -30,7 +31,7 @@ func main() {
 	// router := gin.New()
 	// router.Use(middleware.Auth(cm))
 	//APM
-	// router.Use(apmgin.Middleware(router))
+	router.Use(apmgin.Middleware(router))
 
 	api.Init(router, cm)
 	api.InitWebsocket(router)
