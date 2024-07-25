@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"twc-ota-api/api"
 	"twc-ota-api/config"
 	"twc-ota-api/db"
@@ -19,6 +20,13 @@ import (
 
 // @host 127.0.0.1:8080
 // @BasePath /api/v1
+
+func init() {
+	os.Setenv("ELASTIC_APM_SERVER_URL", "https://apm.ainosi.com")
+	os.Setenv("ELASTIC_APM_SECRET_TOKEN", "zJz71aiEaO2PRA2Wye")
+	os.Setenv("ELASTIC_APM_SERVICE_NAME", "twc-api-ota")
+	os.Setenv("ELASTIC_APM_ENVIRONMENT", "twc-dev")
+}
 
 func main() {
 	config.Init("dev")

@@ -24,11 +24,5 @@
       "connection_string":"postgres://pds_twc:vn6LL68A8AsbmeEj@localhost:5432/db_master_twc_dev?sslmode=disable&application_name=TICKETING-OTA-TWC",
       "max_connection_open":100
     }
-  ],
-  "apm": {
-    "server_url": "https://apm.ainosi.com",
-    "secret_token": "zJz71aiEaO2PRA2Wye",
-    "service_name": "twc-api-ota",
-    "environment": "twc-dev"
-  }
+  ]
 }
