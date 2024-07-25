@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"twc-ota-api/db/repositories"
 	"twc-ota-api/logger"
 	"twc-ota-api/middleware"
@@ -56,7 +57,10 @@ func RedeemTicketV2(c *gin.Context) {
 
 	userData := middleware.Decode(split[1])
 
+	spanTime := time.Now()
 	result, code, msg, msgCode, status := repositories.RedeemTicketV2(spanCtx, userData, request)
+	duration := time.Since(spanTime)
+	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{"duration": duration}), string(in))
 
 	c.JSON(code, builder.ApiResponseData(code, msg, msgCode, result))
 	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{}), string(in))

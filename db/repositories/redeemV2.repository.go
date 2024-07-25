@@ -71,6 +71,8 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 
 	sort.Strings(req.QR)
 	batchSize := 100
+
+	batchLoopSpanTime := time.Now()
 	batchLoopSpan, batchLoopCtx := apm.StartSpan(ctx, "RedeemReqV2.batchLoopSpan", "repository")
 
 	for start, end := 0, 0; start < len(req.QR); start = end {
@@ -591,6 +593,8 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 		// end looping qr prefix
 	}
 	batchLoopSpan.End()
+	batchLoopSpanDuration := time.Since(batchLoopSpanTime)
+	logger.Info("Batch loop span duration", "200", true, "", fmt.Sprintf("duration: %s", batchLoopSpanDuration))
 
 	return resp, http.StatusOK, "Transaction success", "TRANSACTION_OTA_SUCCESS", true
 }
