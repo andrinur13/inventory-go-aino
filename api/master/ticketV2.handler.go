@@ -14,6 +14,7 @@ import (
 	"twc-ota-api/utils/builder"
 
 	"github.com/gin-gonic/gin"
+	"go.elastic.co/apm/v2"
 )
 
 // TicketRouter : Routing
@@ -30,6 +31,9 @@ func TicketRouterV2(r *gin.RouterGroup, permission middleware.Permission, cacheM
 
 // RedeemTicketV2 : redeem ticket v2
 func RedeemTicketV2(c *gin.Context) {
+	span, spanCtx := apm.StartSpan(c.Request.Context(), "RedeemTicketV2", "handler")
+	defer span.End()
+
 	request := new(requests.RedeemReqV2)
 
 	if err := c.ShouldBindJSON(request); err != nil {
@@ -45,12 +49,14 @@ func RedeemTicketV2(c *gin.Context) {
 		return
 	}
 
+	span.Context.SetLabel("request_body", string(in))
+
 	tokenString := c.Request.Header.Get("Authorization")
 	split := strings.Split(tokenString, " ")
 
 	userData := middleware.Decode(split[1])
 
-	result, code, msg, msgCode, status := repositories.RedeemTicketV2(userData, request)
+	result, code, msg, msgCode, status := repositories.RedeemTicketV2(spanCtx, userData, request)
 
 	c.JSON(code, builder.ApiResponseData(code, msg, msgCode, result))
 	logger.Info(msg, strconv.Itoa(code), status, fmt.Sprintf("%v", map[string]interface{}{}), string(in))
