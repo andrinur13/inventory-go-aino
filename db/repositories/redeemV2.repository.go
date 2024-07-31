@@ -16,6 +16,7 @@ import (
 	"twc-ota-api/requests"
 	"twc-ota-api/utils/helper"
 
+	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"go.elastic.co/apm/module/apmgorm/v2"
 	"go.elastic.co/apm/v2"
@@ -60,7 +61,6 @@ func constructQrPrefix(qr []string) []QrPrefix {
 // RedeemTicket : redeem ticket
 func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests.RedeemReqV2) (map[string]interface{}, int, string, string, bool) {
 	resp := make(map[string]interface{}, 0)
-	maxRetry := 10
 	dbConn0 := apmgorm.WithContext(ctx, db.DB[0])
 
 	visitDate, err := time.Parse("2006-01-02", req.VisitDate)
@@ -74,7 +74,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 	}
 
 	sort.Strings(req.QR)
-	batchSize := 10
+	batchSize := 100
 	expectedResponses := len(req.QR) / batchSize
 	if len(req.QR)%batchSize != 0 {
 		expectedResponses++
@@ -100,64 +100,35 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 			// checking if qr is not redeemed
 			var checkOtaInventoryDetails []entities.OtaInventoryDetail
 
-			if err := dbConn0.Raw(`
-				SELECT oid2.*
-				FROM ota_inventory_detail oid2
-				JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
-				WHERE oi.agent_id = ?
-				AND oid2.qr IN (?)
-				AND oid2.redeem_date IS NOT NULL
-				LIMIT ?`, userData.Typeid, batch, len(batch)).
-				Scan(&checkOtaInventoryDetails).Error; err != nil {
+			err := db.WithRetry("checkOtaInventoryDetails", fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), dbConn0, func(innerDb *gorm.DB) error {
+				return innerDb.Raw(`
+					SELECT oid2.*
+					FROM ota_inventory_detail oid2
+					JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
+					WHERE oi.agent_id = ?
+					AND oid2.qr IN (?)
+					AND oid2.redeem_date IS NOT NULL
+					LIMIT ?`, userData.Typeid, batch, len(batch)).
+					Scan(&checkOtaInventoryDetails).Error
+			})
+
+			if err != nil {
 				logger.Error("Error when fetching ota inventory details", "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
+
+				msg := err.Error()
 				if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-					for i := 0; i < maxRetry; i++ {
-						err = dbConn0.Raw(`
-							SELECT oid2.*
-							FROM ota_inventory_detail oid2
-							JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
-							WHERE oi.agent_id = ?
-							AND oid2.qr IN (?)
-							AND oid2.redeem_date IS NOT NULL
-							LIMIT ?`, userData.Typeid, batch, len(batch)).
-							Scan(&checkOtaInventoryDetails).Error
-						if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-							logger.Error(fmt.Sprintf("Hitback fetching ota inventory details: %d...", i+1), "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-							time.Sleep(3 * time.Second)
-							continue
-						} else {
-							logger.Info(fmt.Sprintf("Hitback fetching ota inventory details successfully: %d...", i+1), "200", true, "", fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}))
-							break
-						}
-					}
-
-					if err != nil {
-						logger.Error("Error when hitback fetching ota inventory details", "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-
-						msg := err.Error()
-						if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-							msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-						}
-
-						chResp <- ResponseDTO{
-							Code:        http.StatusInternalServerError,
-							Message:     msg,
-							MessageCode: "TRANSACTION_OTA_FAILED",
-							Status:      false,
-							Error:       err,
-						}
-						return
-					}
-				} else {
-					chResp <- ResponseDTO{
-						Code:        http.StatusInternalServerError,
-						Message:     err.Error(),
-						MessageCode: "TRANSACTION_OTA_FAILED",
-						Status:      false,
-						Error:       err,
-					}
-					return
+					msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
 				}
+
+				chResp <- ResponseDTO{
+					Code:        http.StatusInternalServerError,
+					Message:     msg,
+					MessageCode: "TRANSACTION_OTA_FAILED",
+					Status:      false,
+					Error:       err,
+				}
+
+				return
 			}
 
 			if len(checkOtaInventoryDetails) > 0 {
@@ -169,6 +140,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 					Status:      false,
 					Error:       errors.New("qr has been redeemed"),
 				}
+
 				return
 			}
 			// end checking if qr is not redeemed
@@ -182,74 +154,40 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 				// start fetching ota inventory details by given qr
 				var otaInventoryDetails []entities.OtaInventoryDetail
 
-				if err := dbConn0.Raw(`
-					SELECT oid2.*
-					FROM ota_inventory_detail oid2
-					JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
-					WHERE oi.agent_id = ?
-					AND oid2.redeem_date IS NULL
-					AND oid2.void_date IS NULL
-					AND (
-						(oid2.qr IN (?))
-						OR
-						((oid2.qr IS NULL OR oid2.qr = '') AND oid2.qr_prefix = ?)
-					)
-					LIMIT ?`, userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count).
-					Scan(&otaInventoryDetails).Error; err != nil {
+				err := db.WithRetry("otaInventoryDetails", fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count), dbConn0, func(innerDb *gorm.DB) error {
+					return innerDb.Raw(`
+						SELECT oid2.*
+						FROM ota_inventory_detail oid2
+						JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
+						WHERE oi.agent_id = ?
+						AND oid2.redeem_date IS NULL
+						AND oid2.void_date IS NULL
+						AND (
+							(oid2.qr IN (?))
+							OR
+							((oid2.qr IS NULL OR oid2.qr = '') AND oid2.qr_prefix = ?)
+						)
+						LIMIT ?`, userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count).
+						Scan(&otaInventoryDetails).Error
+				})
+
+				if err != nil {
 					logger.Error("Error when fetching ota inventory details", "500", false, fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count), err)
+
+					msg := err.Error()
 					if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-						for i := 0; i < maxRetry; i++ {
-							err = dbConn0.Raw(`
-								SELECT oid2.*
-								FROM ota_inventory_detail oid2
-								JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
-								WHERE oi.agent_id = ?
-								AND oid2.redeem_date IS NULL
-								AND oid2.void_date IS NULL
-								AND (
-									(oid2.qr IN (?))
-									OR
-									((oid2.qr IS NULL OR oid2.qr = '') AND oid2.qr_prefix = ?)
-								)
-								LIMIT ?`, userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count).
-								Scan(&otaInventoryDetails).Error
-							if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-								logger.Error(fmt.Sprintf("Hitback fetching ota inventory details: %d...", i+1), "500", false, fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count), err)
-								time.Sleep(3 * time.Second)
-								continue
-							} else {
-								logger.Info(fmt.Sprintf("Hitback fetching ota inventory details successfully: %d...", i+1), "200", true, "", fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count))
-								break
-							}
-						}
-
-						if err != nil {
-							logger.Error("Error when hitback fetching ota inventory details", "500", false, fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count), err)
-
-							msg := err.Error()
-							if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-								msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-							}
-
-							chResp <- ResponseDTO{
-								Code:        http.StatusInternalServerError,
-								Message:     msg,
-								MessageCode: "TRANSACTION_OTA_FAILED",
-								Status:      false,
-								Error:       err,
-							}
-							return
-						}
-					} else {
-						chResp <- ResponseDTO{
-							Code:        http.StatusInternalServerError,
-							Message:     err.Error(),
-							MessageCode: "TRANSACTION_OTA_FAILED",
-							Status:      false,
-							Error:       err,
-						}
-						return
+						msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
 					}
+
+					chResp <- ResponseDTO{
+						Code:        http.StatusInternalServerError,
+						Message:     msg,
+						MessageCode: "TRANSACTION_OTA_FAILED",
+						Status:      false,
+						Error:       err,
+					}
+
+					return
 				}
 
 				if len(otaInventoryDetails) == 0 {
@@ -261,6 +199,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 						Status:      false,
 						Error:       errors.New("qr not found"),
 					}
+
 					return
 				}
 
@@ -273,6 +212,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 						Status:      false,
 						Error:       errors.New("qr maximum exceeded"),
 					}
+
 					return
 				}
 				// end fetching ota inventory details by given qr
@@ -294,6 +234,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 							Status:      false,
 							Error:       errors.New("ticket has expired"),
 						}
+
 						return
 					}
 
@@ -312,49 +253,19 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 					qrData := make([]entities.OtaInventoryDetail, 0)
 					// end initializing variables
 
-					// start updating and appending qr data by given mid
-					for i, otaInventoryDetail := range otaInventoryDetails {
-						if otaInventoryDetail.GroupMid == mid {
-							// start checking & updating ota inventory detail
-							if otaInventoryDetail.QrPrefix != "" {
-								otaInventoryDetail.QR = qrPrefix.Qr[i]
-							}
+					err := db.WithTransactionRetry(dbConn0, func(tx *gorm.DB) error {
+						// start updating and appending qr data by given mid
+						for i, otaInventoryDetail := range otaInventoryDetails {
+							if otaInventoryDetail.GroupMid == mid {
+								// start checking & updating ota inventory detail
+								if otaInventoryDetail.QrPrefix != "" {
+									otaInventoryDetail.QR = qrPrefix.Qr[i]
+								}
 
-							otaInventoryDetail.RedeemDate = &now
+								otaInventoryDetail.RedeemDate = &now
 
-							if err := dbConn0.Save(&otaInventoryDetail).Error; err != nil {
-								logger.Error("Error when updating ota inventory detail", "500", false, fmt.Sprintf("%+v", otaInventoryDetail), err)
-								if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-									for i := 0; i < maxRetry; i++ {
-										err = dbConn0.Save(&otaInventoryDetail).Error
-										if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-											logger.Error(fmt.Sprintf("Hitback updating ota inventory detail: %d...", i+1), "500", false, fmt.Sprintf("%+v", otaInventoryDetail), err)
-											time.Sleep(3 * time.Second)
-											continue
-										} else {
-											logger.Info(fmt.Sprintf("Hitback updating ota inventory detail successfully: %d...", i+1), "200", true, "", fmt.Sprintf("%+v", otaInventoryDetail))
-											break
-										}
-									}
-
-									if err != nil {
-										logger.Error("Error when hitback updating ota inventory detail", "500", false, fmt.Sprintf("%+v", otaInventoryDetail), err)
-
-										msg := err.Error()
-										if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-											msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-										}
-
-										chResp <- ResponseDTO{
-											Code:        http.StatusInternalServerError,
-											Message:     msg,
-											MessageCode: "TRANSACTION_OTA_FAILED",
-											Status:      false,
-											Error:       err,
-										}
-										return
-									}
-								} else {
+								if err := tx.Save(&otaInventoryDetail).Error; err != nil {
+									logger.Error("Error when updating ota inventory detail", "500", false, fmt.Sprintf("%+v", otaInventoryDetail), err)
 									chResp <- ResponseDTO{
 										Code:        http.StatusInternalServerError,
 										Message:     err.Error(),
@@ -362,73 +273,41 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 										Status:      false,
 										Error:       err,
 									}
-									return
+									return err
 								}
-							}
 
-							qrData = append(qrData, otaInventoryDetail)
-							*tickAmount += otaInventoryDetail.TrfAmount
-							// end checking & updating ota inventory detail
+								qrData = append(qrData, otaInventoryDetail)
+								*tickAmount += otaInventoryDetail.TrfAmount
+								// end checking & updating ota inventory detail
+							}
 						}
-					}
-					// end updating and appending qr data by given mid
+						// end updating and appending qr data by given mid
 
-					// start initialize new ticket
-					tickStan := now.UnixNano()
-					microStan := tickStan / (int64(time.Millisecond) / int64(time.Nanosecond))
-					tickNumber := fmt.Sprintf("TWC.5.%d.%d", userData.Typeid, microStan)
-					newTicket := entities.TickModel{
-						Tick_id:             newTickID,
-						Tick_stan:           int(tickStan),
-						Tick_number:         tickNumber,
-						Tick_mid:            mid,
-						Tick_src_type:       5,
-						Tick_src_id:         fmt.Sprintf("%d", userData.Typeid),
-						Tick_src_inv_num:    req.OtaOrderID,
-						Tick_amount:         *tickAmount,
-						Tick_emoney:         0,
-						Tick_purc:           now.Format("2006-01-02 15:04:05"),
-						Tick_issuing:        now.Format("2006-01-02 15:04:05"),
-						Tick_date:           req.VisitDate,
-						Tick_total_payment:  *tickAmount,
-						Tick_payment_method: "OTA",
-					}
+						// start initialize new ticket
+						tickStan := now.UnixNano()
+						microStan := tickStan / (int64(time.Millisecond) / int64(time.Nanosecond))
+						tickNumber := fmt.Sprintf("TWC.5.%d.%d", userData.Typeid, microStan)
+						newTicket := entities.TickModel{
+							Tick_id:             newTickID,
+							Tick_stan:           int(tickStan),
+							Tick_number:         tickNumber,
+							Tick_mid:            mid,
+							Tick_src_type:       5,
+							Tick_src_id:         fmt.Sprintf("%d", userData.Typeid),
+							Tick_src_inv_num:    req.OtaOrderID,
+							Tick_amount:         *tickAmount,
+							Tick_emoney:         0,
+							Tick_purc:           now.Format("2006-01-02 15:04:05"),
+							Tick_issuing:        now.Format("2006-01-02 15:04:05"),
+							Tick_date:           req.VisitDate,
+							Tick_total_payment:  *tickAmount,
+							Tick_payment_method: "OTA",
+						}
 
-					dbConn0.NewRecord(newTicket)
+						tx.NewRecord(newTicket)
 
-					if err := dbConn0.Create(&newTicket).Error; err != nil {
-						logger.Error("Error when creating new ticket", "500", false, fmt.Sprintf("%+v", newTicket), err)
-						if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-							for i := 0; i < maxRetry; i++ {
-								err = dbConn0.Create(&newTicket).Error
-								if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-									logger.Error(fmt.Sprintf("Hitback creating new ticket: %d...", i+1), "500", false, fmt.Sprintf("%+v", newTicket), err)
-									time.Sleep(3 * time.Second)
-									continue
-								} else {
-									logger.Info(fmt.Sprintf("Hitback creating new ticket successfully: %d...", i+1), "200", true, "", fmt.Sprintf("%+v", newTicket))
-									break
-								}
-							}
-
-							if err != nil {
-								logger.Error("Error when hitback creating new ticket", "500", false, fmt.Sprintf("%+v", newTicket), err)
-
-								msg := err.Error()
-								if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-									msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-								}
-
-								chResp <- ResponseDTO{
-									Code:        http.StatusInternalServerError,
-									Message:     msg,
-									MessageCode: "TRANSACTION_OTA_FAILED",
-									Status:      false,
-									Error:       err,
-								}
-								return
-							}
-						} else {
+						if err := tx.Create(&newTicket).Error; err != nil {
+							logger.Error("Error when creating new ticket", "500", false, fmt.Sprintf("%+v", newTicket), err)
 							chResp <- ResponseDTO{
 								Code:        http.StatusInternalServerError,
 								Message:     err.Error(),
@@ -436,63 +315,31 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 								Status:      false,
 								Error:       err,
 							}
-							return
+							return err
 						}
-					}
-					// end initialize new ticket
+						// end initialize new ticket
 
-					// start creating related ticket data
-					for _, item := range qrData {
-						newTickdetID := uuid.NewV4()
+						// start creating related ticket data
+						for _, item := range qrData {
+							newTickdetID := uuid.NewV4()
 
-						// start creating new tickdet
-						newTickDet := entities.TickDetModel{
-							Tickdet_id:      newTickdetID,
-							Tickdet_tick_id: newTickID,
-							Tickdet_trf_id:  item.TrfID,
-							Tickdet_trftype: item.TrfType,
-							Tickdet_amount:  item.TrfAmount,
-							Tickdet_qty:     1,
-							Tickdet_total:   item.TrfAmount,
-							Tickdet_qr:      item.QR,
-							Ext:             `{"void": {"status": false}, "refund": {"status": false}, "cashback": {"status": false}, "nationality": "ID"}`,
-						}
+							// start creating new tickdet
+							newTickDet := entities.TickDetModel{
+								Tickdet_id:      newTickdetID,
+								Tickdet_tick_id: newTickID,
+								Tickdet_trf_id:  item.TrfID,
+								Tickdet_trftype: item.TrfType,
+								Tickdet_amount:  item.TrfAmount,
+								Tickdet_qty:     1,
+								Tickdet_total:   item.TrfAmount,
+								Tickdet_qr:      item.QR,
+								Ext:             `{"void": {"status": false}, "refund": {"status": false}, "cashback": {"status": false}, "nationality": "ID"}`,
+							}
 
-						dbConn0.NewRecord(newTickDet)
+							tx.NewRecord(newTickDet)
 
-						if err := dbConn0.Create(&newTickDet).Error; err != nil {
-							logger.Error("Error when creating new tickdet", "500", false, fmt.Sprintf("%+v", newTickDet), err)
-							if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-								for i := 0; i < maxRetry; i++ {
-									err = dbConn0.Create(&newTickDet).Error
-									if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-										logger.Error(fmt.Sprintf("Hitback creating new tickdet: %d...", i+1), "500", false, fmt.Sprintf("%+v", newTickDet), err)
-										time.Sleep(3 * time.Second)
-										continue
-									} else {
-										logger.Info(fmt.Sprintf("Hitback creating new tickdet successfully: %d...", i+1), "200", true, "", fmt.Sprintf("%+v", newTickDet))
-										break
-									}
-								}
-
-								if err != nil {
-									logger.Error("Error when hitback creating new tickdet", "500", false, fmt.Sprintf("%+v", newTickDet), err)
-
-									msg := err.Error()
-									if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-										msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-									}
-
-									chResp <- ResponseDTO{
-										Code:        http.StatusInternalServerError,
-										Message:     msg,
-										MessageCode: "TRANSACTION_OTA_FAILED",
-										Status:      false,
-										Error:       err,
-									}
-									return
-								}
-							} else {
+							if err := tx.Create(&newTickDet).Error; err != nil {
+								logger.Error("Error when creating new tickdet", "500", false, fmt.Sprintf("%+v", newTickDet), err)
 								chResp <- ResponseDTO{
 									Code:        http.StatusInternalServerError,
 									Message:     err.Error(),
@@ -500,14 +347,13 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 									Status:      false,
 									Error:       err,
 								}
-								return
+								return err
 							}
-						}
-						// end creating new tickdet
+							// end creating new tickdet
 
-						// start fetching ticklist addition by given trf id
-						var ticktlistAdditions []entities.TickListAddition
-						if err := dbConn0.Raw(`
+							// start fetching ticklist addition by given trf id
+							var ticktlistAdditions []entities.TickListAddition
+							if err := tx.Raw(`
 							SELECT
 								mt2.trfdet_mtick_id,
 								mg.group_mid
@@ -517,117 +363,23 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 							JOIN master_group mg ON mg.group_id = mt3.mtick_group_id
 							WHERE mt.trf_id = ?
 							`, item.TrfID).Scan(&ticktlistAdditions).Error; err != nil {
-							logger.Error("Error when fetching ticklist addition by given trf id", "500", false, fmt.Sprintf("trf_id: %d", item.TrfID), err)
-							if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-								for i := 0; i < maxRetry; i++ {
-									err = dbConn0.Raw(`
-										SELECT
-											mt2.trfdet_mtick_id,
-											mg.group_mid
-										FROM master_tariff mt
-										JOIN master_tariffdet mt2 ON mt2.trfdet_trf_id = mt.trf_id
-										JOIN master_ticket mt3 ON mt3.mtick_id = mt2.trfdet_mtick_id
-										JOIN master_group mg ON mg.group_id = mt3.mtick_group_id
-										WHERE mt.trf_id = ?
-										`, item.TrfID).Scan(&ticktlistAdditions).Error
-									if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-										logger.Error(fmt.Sprintf("Hitback fetching ticklist addition by given trf id: %d...", i+1), "500", false, fmt.Sprintf("trf_id: %d", item.TrfID), err)
-										time.Sleep(3 * time.Second)
-										continue
-									} else {
-										logger.Info(fmt.Sprintf("Hitback fetching ticklist addition by given trf id successfully: %d...", i+1), "200", true, "", fmt.Sprintf("trf_id: %d", item.TrfID))
-										break
-									}
+								logger.Error("Error when fetching ticklist addition by given trf id", "500", false, fmt.Sprintf("trf_id: %d", item.TrfID), err)
+								chResp <- ResponseDTO{
+									Code:        http.StatusInternalServerError,
+									Message:     err.Error(),
+									MessageCode: "TRANSACTION_OTA_FAILED",
+									Status:      false,
+									Error:       err,
 								}
+								return err
+							}
+							// end fetching ticklist addition by given trf id
 
+							// start creating new ticklist
+							for _, ticktlistAddition := range ticktlistAdditions {
+								visitDate, err := time.Parse("2006-01-02", req.VisitDate)
 								if err != nil {
-									logger.Error("Error when hitback fetching ticklist addition by given trf id", "500", false, fmt.Sprintf("trf_id: %d", item.TrfID), err)
-
-									msg := err.Error()
-									if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-										msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-									}
-
-									chResp <- ResponseDTO{
-										Code:        http.StatusInternalServerError,
-										Message:     msg,
-										MessageCode: "TRANSACTION_OTA_FAILED",
-										Status:      false,
-										Error:       err,
-									}
-									return
-								}
-							} else {
-								chResp <- ResponseDTO{
-									Code:        http.StatusInternalServerError,
-									Message:     err.Error(),
-									MessageCode: "TRANSACTION_OTA_FAILED",
-									Status:      false,
-									Error:       err,
-								}
-								return
-							}
-						}
-						// end fetching ticklist addition by given trf id
-
-						// start creating new ticklist
-						for _, ticktlistAddition := range ticktlistAdditions {
-							visitDate, err := time.Parse("2006-01-02", req.VisitDate)
-							if err != nil {
-								logger.Error("Error when parsing visit date", "500", false, fmt.Sprintf("visit_date: %s", req.VisitDate), err)
-								chResp <- ResponseDTO{
-									Code:        http.StatusInternalServerError,
-									Message:     err.Error(),
-									MessageCode: "TRANSACTION_OTA_FAILED",
-									Status:      false,
-									Error:       err,
-								}
-								return
-							}
-							expiryDate := visitDate.Add(time.Hour * 24).Add(time.Second * -1)
-							newTickList := entities.TickListModel{
-								Ticklist_id:         uuid.NewV4(),
-								Ticklist_tickdet_id: newTickdetID,
-								Ticklist_mtick_id:   ticktlistAddition.TrfdetMtickID,
-								Ticklist_expire:     expiryDate.Format("2006-01-02 15:04:05"),
-								Ticklist_mid:        ticktlistAddition.GroupMid,
-							}
-
-							dbConn0.NewRecord(newTickList)
-
-							if err := dbConn0.Create(&newTickList).Error; err != nil {
-								logger.Error("Error when creating new ticklist", "500", false, fmt.Sprintf("%+v", newTickList), err)
-								if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-									for i := 0; i < maxRetry; i++ {
-										err = dbConn0.Create(&newTickList).Error
-										if err != nil && (reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection") {
-											logger.Error(fmt.Sprintf("Hitback creating new ticklist: %d...", i+1), "500", false, fmt.Sprintf("%+v", newTickList), err)
-											time.Sleep(3 * time.Second)
-											continue
-										} else {
-											logger.Info(fmt.Sprintf("Hitback creating new ticklist successfully: %d...", i+1), "200", true, "", fmt.Sprintf("%+v", newTickList))
-											break
-										}
-									}
-
-									if err != nil {
-										logger.Error("Error when hitback creating new ticklist", "500", false, fmt.Sprintf("%+v", newTickList), err)
-
-										msg := err.Error()
-										if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-											msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-										}
-
-										chResp <- ResponseDTO{
-											Code:        http.StatusInternalServerError,
-											Message:     msg,
-											MessageCode: "TRANSACTION_OTA_FAILED",
-											Status:      false,
-											Error:       err,
-										}
-										return
-									}
-								} else {
+									logger.Error("Error when parsing visit date", "500", false, fmt.Sprintf("visit_date: %s", req.VisitDate), err)
 									chResp <- ResponseDTO{
 										Code:        http.StatusInternalServerError,
 										Message:     err.Error(),
@@ -635,22 +387,82 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 										Status:      false,
 										Error:       err,
 									}
-									return
+									return err
+								}
+								expiryDate := visitDate.Add(time.Hour * 24).Add(time.Second * -1)
+								newTickList := entities.TickListModel{
+									Ticklist_id:         uuid.NewV4(),
+									Ticklist_tickdet_id: newTickdetID,
+									Ticklist_mtick_id:   ticktlistAddition.TrfdetMtickID,
+									Ticklist_expire:     expiryDate.Format("2006-01-02 15:04:05"),
+									Ticklist_mid:        ticktlistAddition.GroupMid,
+								}
+
+								tx.NewRecord(newTickList)
+
+								if err := tx.Create(&newTickList).Error; err != nil {
+									logger.Error("Error when creating new ticklist", "500", false, fmt.Sprintf("%+v", newTickList), err)
+									chResp <- ResponseDTO{
+										Code:        http.StatusInternalServerError,
+										Message:     err.Error(),
+										MessageCode: "TRANSACTION_OTA_FAILED",
+										Status:      false,
+										Error:       err,
+									}
+									return err
 								}
 							}
+							// end creating new ticklist
 						}
-						// end creating new ticklist
+						// end creating related ticket data
+
+						return nil
+					})
+
+					if err != nil {
+						logger.Error(fmt.Sprintf("Error occured when: %s", err.Error()), "500", false, fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count), err)
+
+						msg := err.Error()
+						if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
+							msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
+						}
+
+						chResp <- ResponseDTO{
+							Code:        http.StatusInternalServerError,
+							Message:     msg,
+							MessageCode: "TRANSACTION_OTA_FAILED",
+							Status:      false,
+							Error:       err,
+						}
+
+						return
 					}
-					// end creating related ticket data
 				}
 				// end main process
 			}
 			// end looping qr prefix
+
+			chResp <- ResponseDTO{
+				Code:    http.StatusOK,
+				Message: "Batch processed successfully",
+				Status:  true,
+			}
 		}()
 	}
 
 	batchLoopSpan.End()
 	// end main loop
+
+	wg.Wait()
+	close(chResp)
+
+	for res := range chResp {
+		if res.Error != nil {
+			return resp, res.Code, res.Message, res.MessageCode, res.Status
+		} else {
+			return resp, http.StatusOK, "Transaction success", "TRANSACTION_OTA_SUCCESS", true
+		}
+	}
 
 	return resp, http.StatusOK, "Transaction success", "TRANSACTION_OTA_SUCCESS", true
 }
