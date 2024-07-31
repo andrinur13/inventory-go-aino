@@ -17,8 +17,9 @@ require (
 	github.com/swaggo/gin-swagger v1.3.0
 	github.com/swaggo/swag v1.6.5
 	go.elastic.co/apm/module/apmgin/v2 v2.6.0
+	go.elastic.co/apm/module/apmgorm/v2 v2.6.0
 	go.elastic.co/apm/v2 v2.6.0
-	golang.org/x/crypto v0.17.0
+	golang.org/x/crypto v0.20.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
 	gopkg.in/olahol/melody.v1 v1.0.0-20170518105555-d52139073376
 )
@@ -45,7 +46,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lib/pq v1.1.1 // indirect
+	github.com/lib/pq v1.10.2 // indirect
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -56,9 +57,10 @@ require (
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	go.elastic.co/apm/module/apmhttp/v2 v2.6.0 // indirect
+	go.elastic.co/apm/module/apmsql/v2 v2.6.0 // indirect
 	go.elastic.co/fastjson v1.1.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
