@@ -2,9 +2,11 @@ package main
 
 import (
 	"os"
+	"time"
 	"twc-ota-api/api"
 	"twc-ota-api/config"
 	"twc-ota-api/db"
+	"twc-ota-api/middleware"
 	"twc-ota-api/service"
 
 	"github.com/gin-gonic/gin"
@@ -40,6 +42,7 @@ func main() {
 	// router.Use(middleware.Auth(cm))
 	//APM
 	router.Use(apmgin.Middleware(router))
+	router.Use(middleware.TimeoutMiddleware(30 * time.Second))
 
 	api.Init(router, cm)
 	api.InitWebsocket(router)
