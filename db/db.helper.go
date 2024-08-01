@@ -85,6 +85,11 @@ func WithRetry(model string, req string, db *gorm.DB, query func(db *gorm.DB) er
 			break
 		}
 
+		if strings.Contains(err.Error(), "pq: duplicate key value violates unique constraint") {
+			logger.Info(fmt.Sprintf("Duplicate key error encountered, skipping retry for %s", model), "200", false, "", req)
+			return err
+		}
+
 		logger.Error(fmt.Sprintf("Retryable for %s error occurred on attempt %d...", model, i+1), "500", false, req, err)
 		time.Sleep(retryInterval)
 	}
@@ -118,6 +123,11 @@ func WithTransactionRetry(db *gorm.DB, fn func(tx *gorm.DB) error) error {
 			break
 		}
 
+		if strings.Contains(err.Error(), "pq: duplicate key value violates unique constraint") {
+			logger.Info("Duplicate key error encountered, skipping retry", "200", false, "", "")
+			return err
+		}
+
 		logger.Error(fmt.Sprintf("Retryable error occurred on attempt %d: %s", i+1, err), "500", false, "", err)
 		reconnectDatabase()
 		time.Sleep(retryInterval)
@@ -126,7 +136,6 @@ func WithTransactionRetry(db *gorm.DB, fn func(tx *gorm.DB) error) error {
 }
 
 func isRetryableError(err error) bool {
-	fmt.Printf("error terjadi: %s (%v)\n", err.Error(), strings.Contains(err.Error(), "connection refused"))
 	return reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" || strings.Contains(err.Error(), "connection refused")
 }
 

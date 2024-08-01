@@ -73,8 +73,12 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 		return resp, http.StatusBadRequest, "Visit date must be today or later", "TRANSACTION_OTA_DATE_INVALID", false
 	}
 
+	if len(req.QR) > 50 {
+		return resp, http.StatusBadRequest, "Maximum 50 QR per request", "TRANSACTION_OTA_MAX_QR", false
+	}
+
 	sort.Strings(req.QR)
-	batchSize := 100
+	batchSize := 10
 	expectedResponses := len(req.QR) / batchSize
 	if len(req.QR)%batchSize != 0 {
 		expectedResponses++
@@ -94,59 +98,11 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 
 		batch := req.QR[start:end]
 		wg.Add(1)
-		go func() {
+		go func(innerBatch []string) {
 			defer wg.Done()
 
-			// checking if qr is not redeemed
-			var checkOtaInventoryDetails []entities.OtaInventoryDetail
-
-			err := db.WithRetry("checkOtaInventoryDetails", fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), dbConn0, func(innerDb *gorm.DB) error {
-				return innerDb.Raw(`
-					SELECT oid2.*
-					FROM ota_inventory_detail oid2
-					JOIN ota_inventory oi ON oi.id = oid2.ota_inventory_id
-					WHERE oi.agent_id = ?
-					AND oid2.qr IN (?)
-					AND oid2.redeem_date IS NOT NULL
-					LIMIT ?`, userData.Typeid, batch, len(batch)).
-					Scan(&checkOtaInventoryDetails).Error
-			})
-
-			if err != nil {
-				logger.Error("Error when fetching ota inventory details", "500", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}), err)
-
-				msg := err.Error()
-				if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
-					msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
-				}
-
-				chResp <- ResponseDTO{
-					Code:        http.StatusInternalServerError,
-					Message:     msg,
-					MessageCode: "TRANSACTION_OTA_FAILED",
-					Status:      false,
-					Error:       err,
-				}
-
-				return
-			}
-
-			if len(checkOtaInventoryDetails) > 0 {
-				logger.Warning(fmt.Sprintf("QR %s has been redeemed", checkOtaInventoryDetails[0].QR), "400", false, fmt.Sprintf("agent_id: %d, qr: %+v", userData.Typeid, []string{strings.Join(batch, ",")}))
-				chResp <- ResponseDTO{
-					Code:        http.StatusBadRequest,
-					Message:     fmt.Sprintf("QR %s has been redeemed", checkOtaInventoryDetails[0].QR),
-					MessageCode: "TRANSACTION_OTA_REDEEMED",
-					Status:      false,
-					Error:       errors.New("qr has been redeemed"),
-				}
-
-				return
-			}
-			// end checking if qr is not redeemed
-
 			// start construct qr prefix
-			qrPrefixes := constructQrPrefix(batch)
+			qrPrefixes := constructQrPrefix(innerBatch)
 			// end construct qr prefix
 
 			// start looping qr prefix
@@ -175,7 +131,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 					logger.Error("Error when fetching ota inventory details", "500", false, fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count), err)
 
 					msg := err.Error()
-					if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
+					if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" || strings.Contains(err.Error(), "connection refused") {
 						msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
 					}
 
@@ -262,9 +218,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 									otaInventoryDetail.QR = qrPrefix.Qr[i]
 								}
 
-								otaInventoryDetail.RedeemDate = &now
-
-								if err := tx.Save(&otaInventoryDetail).Error; err != nil {
+								if err := tx.Model(&otaInventoryDetail).Where("id = ?", otaInventoryDetail.ID).Update("redeem_date", &now).Error; err != nil {
 									logger.Error("Error when updating ota inventory detail", "500", false, fmt.Sprintf("%+v", otaInventoryDetail), err)
 									chResp <- ResponseDTO{
 										Code:        http.StatusInternalServerError,
@@ -423,7 +377,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 						logger.Error(fmt.Sprintf("Error occured when: %s", err.Error()), "500", false, fmt.Sprintf("agent_id: %d, qr: %s, qr_prefix: %s, limit: %d", userData.Typeid, qrPrefix.Qr, qrPrefix.QrPrefix, qrPrefix.Count), err)
 
 						msg := err.Error()
-						if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" {
+						if reflect.TypeOf(err).String() == "*net.OpError" || err.Error() == "driver: bad connection" || strings.Contains(err.Error(), "connection refused") {
 							msg = "Your database connection was broken. Please contact your administrator to fix this problem. Thank you."
 						}
 
@@ -447,7 +401,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 				Message: "Batch processed successfully",
 				Status:  true,
 			}
-		}()
+		}(batch)
 	}
 
 	batchLoopSpan.End()
