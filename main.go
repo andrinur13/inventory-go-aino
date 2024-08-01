@@ -27,7 +27,7 @@ func init() {
 	os.Setenv("ELASTIC_APM_SERVER_URL", "https://apm.ainosi.com")
 	os.Setenv("ELASTIC_APM_SECRET_TOKEN", "zJz71aiEaO2PRA2Wye")
 	os.Setenv("ELASTIC_APM_SERVICE_NAME", "twc-api-ota")
-	os.Setenv("ELASTIC_APM_ENVIRONMENT", "twc-dev")
+	os.Setenv("ELASTIC_APM_ENVIRONMENT", "twc-prod")
 }
 
 func main() {
