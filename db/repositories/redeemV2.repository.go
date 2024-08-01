@@ -73,7 +73,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 		return resp, http.StatusBadRequest, "Visit date must be today or later", "TRANSACTION_OTA_DATE_INVALID", false
 	}
 
-	if len(req.QR) > 50 {
+	if len(req.QR) > 100 {
 		return resp, http.StatusBadRequest, "Maximum 50 QR per request", "TRANSACTION_OTA_MAX_QR", false
 	}
 
