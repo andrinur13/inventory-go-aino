@@ -13,6 +13,7 @@ type appConf struct {
 	Env            string
 	GtHost         string
 	ImageDirectory string
+	Timeout        int
 }
 
 // mailConf : struct for attributes needed for email config
@@ -76,6 +77,14 @@ func Init(env string) {
 			log.Fatal(err)
 		} else {
 			App.ImageDirectory = string(imageDirectory)
+		}
+
+		var timeout int64
+		timeout, err = jsonparser.GetInt(cfgBlob, "app", "timeout")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			App.Timeout = int(timeout)
 		}
 
 		var mailHost []byte

@@ -42,7 +42,7 @@ func main() {
 	// router.Use(middleware.Auth(cm))
 	//APM
 	router.Use(apmgin.Middleware(router))
-	router.Use(middleware.TimeoutMiddleware(10 * time.Second))
+	router.Use(middleware.TimeoutMiddleware(time.Duration(config.App.Timeout) * time.Second))
 
 	api.Init(router, cm)
 	api.InitWebsocket(router)
