@@ -2,7 +2,8 @@
   "app":{
     "serverport":"13008",
     "gt_host": "https://dummy.com/",
-    "image_directory": "/var/www/html/public/b2bm/package"
+    "image_directory": "/var/www/html/public/b2bm/package",
+    "timeout": 300
   },
   "email": {
     "host":"smtp.gmail.com",
