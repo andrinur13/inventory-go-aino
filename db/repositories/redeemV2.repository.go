@@ -86,6 +86,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 
 	wg := new(sync.WaitGroup)
 	chResp := make(chan ResponseDTO, expectedResponses)
+	mtx := new(sync.Mutex)
 
 	// start main loop
 	batchLoopSpan, _ := apm.StartSpan(ctx, "RedeemReqV2.batchLoopSpan", "repository")
@@ -100,6 +101,9 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 		wg.Add(1)
 		go func(innerBatch []string) {
 			defer wg.Done()
+
+			mtx.Lock()
+			defer mtx.Unlock()
 
 			// start construct qr prefix
 			qrPrefixes := constructQrPrefix(innerBatch)
@@ -218,7 +222,7 @@ func RedeemTicketV2(ctx context.Context, userData *entities.Users, req *requests
 									otaInventoryDetail.QR = qrPrefix.Qr[i]
 								}
 
-								if err := tx.Model(&otaInventoryDetail).Where("id = ?", otaInventoryDetail.ID).Update("redeem_date", &now).Error; err != nil {
+								if err := tx.Model(&otaInventoryDetail).Where("id = ?", otaInventoryDetail.ID).Update("redeem_date", &now).Update("qr", otaInventoryDetail.QR).Error; err != nil {
 									logger.Error("Error when updating ota inventory detail", "500", false, fmt.Sprintf("%+v", otaInventoryDetail), err)
 									chResp <- ResponseDTO{
 										Code:        http.StatusInternalServerError,
