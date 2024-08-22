@@ -13,6 +13,7 @@ type appConf struct {
 	Env            string
 	GtHost         string
 	ImageDirectory string
+	Timeout        int
 }
 
 // mailConf : struct for attributes needed for email config
@@ -78,6 +79,14 @@ func Init(env string) {
 			App.ImageDirectory = string(imageDirectory)
 		}
 
+		var timeout int64
+		timeout, err = jsonparser.GetInt(cfgBlob, "app", "timeout")
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			App.Timeout = int(timeout)
+		}
+
 		var mailHost []byte
 		mailHost, _, _, err = jsonparser.Get(cfgBlob, "email", "host")
 		if err != nil {
@@ -140,6 +149,37 @@ func Init(env string) {
 			Databases = append(Databases, database)
 		}, "databases")
 
+		// var apmUrl []byte
+		// apmUrl, _, _, err = jsonparser.Get(cfgBlob, "apm", "server_url")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// } else {
+		// 	os.Setenv("ELASTIC_APM_SERVER_URL", string(apmUrl))
+		// }
+
+		// var apmSecret []byte
+		// apmSecret, _, _, err = jsonparser.Get(cfgBlob, "apm", "secret_token")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// } else {
+		// 	os.Setenv("ELASTIC_APM_SECRET_TOKEN", string(apmSecret))
+		// }
+
+		// var apmService []byte
+		// apmService, _, _, err = jsonparser.Get(cfgBlob, "apm", "service_name")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// } else {
+		// 	os.Setenv("ELASTIC_APM_SERVICE_NAME", string(apmService))
+		// }
+
+		// var apmEnv []byte
+		// apmEnv, _, _, err = jsonparser.Get(cfgBlob, "apm", "environment")
+		// if err != nil {
+		// 	log.Fatal(err)
+		// } else {
+		// 	os.Setenv("ELASTIC_APM_ENVIRONMENT", string(apmEnv))
+		// }
 	} else {
 		log.Fatal("cannot initialize config")
 	}
