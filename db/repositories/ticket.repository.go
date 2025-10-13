@@ -55,10 +55,12 @@ func GetTicket(r interface{}, token *entities.Users) (map[string]interface{}, st
 	query := `SELECT 
 				COALESCE(cast(a.trf_id as varchar(255)), '') as trf_id,
 				COALESCE(a.trf_name, '') as trf_name,
+				COALESCE(e.trfftype_name, '') as trfftype_name,
 				COALESCE(a.trf_value::text, '') as trf_value,
 				COALESCE(a.trf_currency_code, '') as trf_currency_code
 				from public.master_tariff a
 				join public.master_group d on a.trf_group_id = d.group_id
+				join public.master_tariff_type e on a.trf_trfftype_id = e.trfftype_id
 				where a.deleted_at is null
 				and a.trf_agent_id = ?`
 
@@ -111,8 +113,8 @@ func GetTicket(r interface{}, token *entities.Users) (map[string]interface{}, st
 	}
 
 	var curr entities.CurrencyModel
-
-	if err := db.DB[1].Last(&curr).Error; gorm.IsRecordNotFoundError(err) {
+	if err := db.DB[1].Order("curr_id DESC").First(&curr).Error; gorm.IsRecordNotFoundError(err) {
+	// if err := db.DB[1].Last(&curr).Error; gorm.IsRecordNotFoundError(err) {
 		return nil, "05", "Currency not found (" + err.Error() + ")", false
 	}
 
@@ -121,13 +123,17 @@ func GetTicket(r interface{}, token *entities.Users) (map[string]interface{}, st
 		trfLabel := "Rp. " + helper.RenderFloat("#.###,", float64(trfVal))
 
 		if item.Trf_currency_code == "USD" {
+			// trfVal = curr.Curr_rate * item.Trf_value
 			trfVal = curr.Curr_rate * item.Trf_value
+			// Menghilangkan .5 dan membulatkan ke bawah menggunakan math.Floor()
+    		trfVal = float32(math.Floor(float64(trfVal)))
 			trfLabel = "USD $" + fmt.Sprintf("%g", item.Trf_value) + " | " + "Rp. " + helper.RenderFloat("#.###,", float64(trfVal))
 		}
 
 		mTicket := entities.MasterTicket{
 			Trf_id:            item.Trf_id,
 			Trf_name:          item.Trf_name,
+			Trfftype_name:     item.Trfftype_name,
 			Trf_value:         trfVal,
 			Trf_label:         trfLabel,
 			Trf_currency_code: item.Trf_currency_code,

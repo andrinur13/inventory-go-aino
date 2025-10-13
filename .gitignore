@@ -22,6 +22,14 @@
 .idea/**/dictionaries
 .idea/**/shelf
 
+# config
+config/config.dev.json
+config/config.dev3.json
+config/config.local.json
+config/config.prod.json
+config/config.sbx.json
+config/config.stg.json
+
 # Sensitive or high-churn files
 .idea/**/dataSources/
 .idea/**/dataSources.ids

@@ -137,8 +137,19 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 				return nil, "13", "Tariff condition data not found", false
 			}
 
-			hour := (exp.Expiredqr * 24)
-			dateExpired := redeemDate.Add(time.Hour * time.Duration(hour)).Format("2006-01-02 15:04:05")
+			// hour := (exp.Expiredqr * 24)
+			// dateExpired := redeemDate.Add(time.Hour * time.Duration(hour)).Format("2006-01-02 15:04:05")
+
+			dateExpired, _ := time.Parse("2006-01-02T15:04:05Z", booking.Booking_date)
+
+			// Atur bagian waktu menjadi 23:59:59 dengan zona waktu yang benar
+			dateExpired = time.Date(
+				dateExpired.Year(),
+				dateExpired.Month(),
+				dateExpired.Day(),
+				23, 59, 59, 0,
+				dateExpired.Location(), // Tetap gunakan zona waktu yang sama
+			)
 
 			for _, bookinglist := range bookinglists {
 				ticklistID := uuid.NewV4()
@@ -148,7 +159,7 @@ func RedeemTicket(token *entities.Users, r *requests.RedeemReq) (map[string]inte
 					Ticklist_mid:        bookinglist.Bookinglist_mid,
 					Ticklist_tickdet_id: tickdetID,
 					Ticklist_mtick_id:   bookinglist.Bookinglist_mtick_id,
-					Ticklist_expire:     dateExpired,
+					Ticklist_expire:     dateExpired.Format("2006-01-02 15:04:05"),
 				}
 
 				db.DB[0].NewRecord(ticklist)

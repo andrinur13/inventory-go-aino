@@ -6,6 +6,7 @@ type MasterTicket struct {
 	// Trf_code          string     `json:"trf_code"`
 	// Trf_agent_id      int        `json:"trf_agent_id"`
 	// Trf_trftype       string     `json:"trf_trftype"`
+	Trfftype_name       string     `json:"trf_trftype"`
 	Trf_currency_code string  `json:"trf_currency_code"`
 	Trf_value         float32 `json:"trf_value"`
 	Trf_label         string  `json:"trf_label"`
@@ -60,6 +61,7 @@ type TariffModel struct {
 	Trf_code          string
 	Trf_value         float32
 	Trf_currency_code string
+	Trfftype_name     string
 }
 
 func (TariffModel) TableName() string {
