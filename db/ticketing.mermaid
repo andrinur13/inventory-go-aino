@@ -1,0 +1,340 @@
+---
+title: TWC OTA Ticketing System Database Schema
+---
+erDiagram
+    %% USER MANAGEMENT
+    users {
+        int id PK
+        string name
+        string email UK
+        string password
+        string type
+        int typeid
+        text users_extras
+        timestamp created_at
+    }
+    password_resets {
+        int id PK
+        string token
+        string email
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% AGENT MANAGEMENT
+    agent_groups {
+        int group_id PK
+        string group_name
+        text group_description
+        timestamp created_at
+    }
+    master_agents {
+        int agent_id PK
+        string agent_name
+        text agent_address
+        int agent_group_id FK
+        text agent_extras
+        timestamp created_at
+    }
+
+    %% MASTER DATA
+    master_group {
+        int group_id PK
+        string group_mid UK
+        string group_name
+        string group_label
+        string group_logo
+        string group_estimate
+        text description
+        string lat
+        string long
+        string adult_age
+        string child_age
+        text how_to_use_ticket
+        timestamp created_at
+    }
+    master_ticket {
+        int mtick_id PK
+        string mtick_name
+        string mtick_code
+        string mtick_type
+        string mtick_cat
+        int mtick_group_id FK
+        int mtick_loc_start
+        int mtick_loc_finish
+        string mtick_merchant_code
+        timestamp created_at
+    }
+    master_tariff_type {
+        int trfftype_id PK
+        string trfftype_name
+        timestamp created_at
+    }
+    master_tariff {
+        int trf_id PK
+        string trf_name
+        string trf_code
+        int trf_agent_id FK
+        int trf_trftype FK
+        string trf_currency_code
+        decimal trf_value
+        string trf_label
+        date trf_start_date
+        date trf_end_date
+        int trf_priority
+        string trf_release
+        int trf_qty
+        decimal trf_tax
+        decimal trf_assurance
+        decimal trf_fix_price
+        decimal trf_admin
+        decimal trf_others
+        string day_condition
+        time begin_time
+        time end_time
+        string card_type
+        int expired_qr
+        timestamp created_at
+    }
+    master_tariffdet {
+        int trfdet_id PK
+        int trfdet_trf_id FK
+        int trfdet_mtick_id FK
+        timestamp created_at
+    }
+    currency {
+        int curr_id PK
+        string curr_code
+        decimal curr_rate
+        timestamp updated_at
+    }
+    master_discount_multi {
+        int discm_id PK
+        string discm_name
+        date discm_start_date
+        date discm_end_date
+        int discm_destination
+        decimal discm_value
+        timestamp created_at
+    }
+
+    %% BOOKING SYSTEM
+    booking {
+        uuid booking_uuid PK
+        int booking_id
+        int agent_id FK
+        string booking_number
+        date booking_date
+        string booking_mid
+        string booking_payment_method
+        decimal booking_amount
+        int booking_emoney
+        decimal booking_total_payment
+        date booking_redeem_date
+        string booking_invoice
+        text customer_note
+        string customer_email
+        string customer_username
+        string customer_phone
+        timestamp created_at
+    }
+    bookingdet {
+        uuid bookingdet_uuid PK
+        int bookingdet_id
+        int bookingdet_booking_id
+        int bookingdet_trf_id FK
+        string bookingdet_trftype
+        decimal bookingdet_amount
+        int bookingdet_qty
+        decimal bookingdet_total
+        uuid bookingdet_booking_uuid FK
+        timestamp created_at
+    }
+    bookinglist {
+        uuid bookinglist_uuid PK
+        int bookinglist_id
+        int bookinglist_bookingdet_id
+        int bookinglist_mtick_id FK
+        string bookinglist_mid
+        uuid bookinglist_bookingdet_uuid FK
+        timestamp created_at
+    }
+
+    %% TRIP PLANNER
+    trip_planner {
+        uuid tp_id PK
+        int tp_stan
+        string tp_number
+        int tp_src_type
+        date tp_start_date
+        date tp_end_date
+        int tp_duration
+        int tp_status
+        int tp_user_id FK
+        int tp_adult
+        int tp_child
+        text tp_contact
+        decimal tp_total_amount
+        text tp_extras
+        int tp_invoice
+        int tp_agent_id FK
+        string tp_payment_method
+        timestamp created_at
+        timestamp updated_at
+    }
+    trip_planner_person {
+        uuid tpp_id PK
+        uuid tpp_tp_id FK
+        string tpp_name
+        int tpp_type
+        string tpp_qr
+        text tpp_extras
+        string id_number
+        string title
+        string type_id
+        timestamp created_at
+    }
+    trip_planner_destination {
+        uuid tpd_id PK
+        uuid tpd_tpp_id FK
+        string tpd_group_mid FK
+        int tpd_trf_id FK
+        decimal tpd_amount
+        date tpd_date
+        date tpd_exp_date
+        int tpd_day
+        int tpd_duration
+        text tpd_extras
+        timestamp created_at
+    }
+
+    %% TICKETING SYSTEM
+    ticket {
+        uuid tick_id PK
+        int tick_stan
+        string tick_number
+        string tick_mid
+        int tick_src_type
+        string tick_src_id
+        string tick_src_inv_num
+        decimal tick_amount
+        int tick_emoney
+        string tick_purc
+        string tick_issuing
+        date tick_date
+        decimal tick_total_payment
+        string tick_payment_method
+        timestamp created_at
+    }
+    ticketdet {
+        uuid tickdet_id PK
+        uuid tickdet_tick_id FK
+        int tickdet_trf_id FK
+        string tickdet_trftype
+        decimal tickdet_amount
+        int tickdet_qty
+        decimal tickdet_total
+        string tickdet_qr
+        text ext
+        timestamp created_at
+    }
+    ticketlist {
+        uuid ticklist_id PK
+        uuid ticklist_tickdet_id FK
+        int ticklist_mtick_id FK
+        timestamp ticklist_expire
+        string ticklist_mid
+        timestamp created_at
+    }
+
+    %% INVENTORY MANAGEMENT
+    ota_inventory {
+        uuid id PK
+        string inventory_number
+        int agent_id FK
+        string agent_name
+        timestamp created_at
+    }
+    ota_inventory_detail {
+        uuid id PK
+        uuid ota_inventory_id FK
+        int group_id FK
+        string group_name
+        int trf_id FK
+        string trf_name
+        timestamp expiry_date
+        string qr
+        decimal trf_amount
+        string qr_prefix
+        timestamp redeem_date
+        timestamp void_date
+        string trf_type
+        string group_mid
+        timestamp created_at
+    }
+
+    %% USER PREFERENCES AND NOTIFICATIONS
+    favorite {
+        uuid fav_id PK
+        int fav_user_id FK
+        text fav_data
+        text fav_extras
+        timestamp fav_created
+        timestamp fav_deleted
+    }
+    inbox_notification {
+        int inbox_id PK
+        int agent_id FK
+        string inbox_title
+        text inbox_short_desc
+        text inbox_full_desc
+        string inbox_image_url
+        timestamp created_at
+    }
+    mobile_config {
+        int mconfig_id PK
+        int mconfig_src_type
+        text mconfig_value
+        timestamp created_at
+    }
+
+    %% RELATIONSHIPS - USER MANAGEMENT
+    users ||--o{ favorite : saves
+    users ||--o{ trip_planner : plans
+    
+    %% RELATIONSHIPS - AGENT MANAGEMENT
+    agent_groups ||--o{ master_agents : groups
+    master_agents ||--o{ booking : creates
+    master_agents ||--o{ master_tariff : offers
+    master_agents ||--o{ trip_planner : manages
+    master_agents ||--o{ inbox_notification : receives
+    master_agents ||--o{ ota_inventory : owns
+
+    %% RELATIONSHIPS - MASTER DATA
+    master_group ||--o{ master_ticket : provides
+    master_tariff_type ||--o{ master_tariff : categorizes
+    master_tariff ||--o{ master_tariffdet : has
+    master_ticket ||--o{ master_tariffdet : used_in
+    
+    %% RELATIONSHIPS - BOOKING SYSTEM
+    booking ||--o{ bookingdet : details
+    bookingdet ||--o{ bookinglist : items
+    master_tariff ||--o{ bookingdet : pricing
+    master_ticket ||--o{ bookinglist : tickets
+
+    %% RELATIONSHIPS - TRIP PLANNER
+    trip_planner ||--o{ trip_planner_person : includes
+    trip_planner_person ||--o{ trip_planner_destination : visits
+    master_group ||--o{ trip_planner_destination : destination_of
+    master_tariff ||--o{ trip_planner_destination : priced_with
+
+    %% RELATIONSHIPS - TICKETING
+    ticket ||--o{ ticketdet : contains
+    ticketdet ||--o{ ticketlist : lists
+    master_tariff ||--o{ ticketdet : pricing_for
+    master_ticket ||--o{ ticketlist : ticket_for
+
+    %% RELATIONSHIPS - INVENTORY
+    ota_inventory ||--o{ ota_inventory_detail : contains
+    master_group ||--o{ ota_inventory_detail : for_attraction
+    master_tariff ||--o{ ota_inventory_detail : with_tariff
